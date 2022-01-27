@@ -1,0 +1,111 @@
+# SPACE CHARGE EXPLICIT LIGHTNING
+state   real    scr            ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "SCR"       "Rain space charge mixing ratio" "# C kg(-1)"
+state   real    scw            ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "SCW"       "cloud water space charge mixing ratio" "# C kg(-1)"
+state   real    sci            ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "SCI"       "cloud ice space charge mixing ratio" "# C kg(-1)"
+state   real    scs            ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "SCS"       "snow space charge mixing ratio" "# C kg(-1)"
+state   real    sch            ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "SCH"       "graupel water space charge mixing ratio" "# C kg(-1)"
+state   real    schl           ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "SCHL"       "hail water space charge mixing ratio" "# C kg(-1)"
+state   real    sciona          ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "SCIONA"       "Passive net ion space charge" "# C kg(-1)"
+state   real    clnox          ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "CLNOX"      "Lightning NOx concentration" "# moles kg(-1)"
+# END SPACE CHARGE EXPLICIT LIGHTNING
+
+# EXPLICIT LIGHTNING
+#
+state    real    rscghis_2d      ij   misc    1         -     irh         "rscghis_2d"             "MAX NONINDUCTIVE CHARGING 2D"     "C m-2"
+state    real    induc           ikj  misc    1         -     irh         "induc"                  "TOTAL INDUCTIVE CHARGING "     "C m-3"
+state    real    noninduc        ikj  misc    1         -     irh         "noninduc"               "TOTAL NONINDUCTIVE CHARGING"     "C m-3"
+state    real    sctot           ikj  misc    1         -     irh         "sctot"                  "Total Space Charge Density"     "C m-3"
+state    real    elecmag         ikj  misc    1         -     irh         "elecmag"                "EFIELD MAGNITUDE"     "V m-1"
+state    real    elecx           ikj  misc    1         -     irh         "elecx"                  "EFIELD X-Component"     "V m-1"
+state    real    elecy           ikj  misc    1         -     irh         "elecy"                  "EFIELD Y-Component"     "V m-1"
+state    real    elecz           ikj  misc    1         -     irh         "elecz"                  "EFIELD Z-Component"     "V m-1"
+state    real    pot             ikj  misc    1         -     irh         "pot"                    "POTENTIAL"     "V"
+state    real    light            ij  misc    1         -     irh         "light"                  "lightning flash"         "flash origin density"
+state    real    lightdens        ij  misc    1         -     irh         "lightdens"              "lightning flash density"         "flash column-1"
+state    integer lightdis         ij  misc    1         -     irh         "lightdis"               "lightning source density"     "Source column-1"
+state    real    flshi           ikj  misc    1         -     irh         "flshi"                  "Lightning init points"     "count"
+state    real    flshn           ikj  misc    1         -     irh         "flshn"                  "Negative channels"     "count"
+state    real    flshp           ikj  misc    1         -     irh         "flshp"                  "Positive channels"     "count"
+state    real    csaci03d        ikj  misc    1         -     irh         "csaci03d"               "graupel-snow collision rate"     "# colli. kg-1 s-1"
+state    real    chaci03d        ikj  misc    1         -     irh         "chaci03d"               "graupel-ice collision rate"     "# colli. kg-1 s-1"
+state    real    chacs03d        ikj  misc    1         -     irh         "chacs03d"               "graupel-snow collision rate"     "# colli. kg-1 s-1"
+state    real    csaci03d_morr   ikj  misc    1         -     irh         "csaci03d_morr"           "graupel-snow collision rate from morr"     "# colli. kg-1 s-1"
+state    real    umc             ikj  misc    1         -     irh         "umc"                     "droplet fall speed"     "m s-1"
+state    real    umr             ikj  misc    1         -     irh         "umr"                     "rain    fall speed"     "m s-1"
+state    real    umi             ikj  misc    1         -     irh         "umi"                     "ice     fall speed"     "m s-1"
+state    real    ums             ikj  misc    1         -     irh         "ums"                     "snow    fall speed"     "m s-1"
+state    real    umg             ikj  misc    1         -     irh         "umg"                     "graupel fall speed"     "m s-1"
+state    real    umh             ikj  misc    1         -     irh         "umh"                     "hail    fall speed"     "m s-1"
+state    real    rhog            ikj  misc    1         -     irh         "rhog"                    "graupel density"        "m s-1"
+state    real    rhoh            ikj  misc    1         -     irh         "rhoh"                    "hail    density"        "m s-1"
+state    real    QGSTEN3D            ikj  misc    1         -     irh         "QGSTEN3D"                    "graup sed rate"        "s-1"
+state    real    QRSTEN3D            ikj  misc    1         -     irh         "QRSTEN3D"                    "rain sed rate"        "s-1"
+state    real    QISTEN3D            ikj  misc    1         -     irh         "QISTEN3D"                    "ice sed rate"        "s-1"
+state    real    QNISTEN3D            ikj  misc    1         -     irh         "QNISTEN3D"                    "snow sed rate"        "s-1"
+state    real    QCSTEN3D            ikj  misc    1         -     irh         "QCSTEN3D"                    "droplet sed rate"        "s-1"
+state    real    PRD3d            ikj  misc    1         -     irh         "PRD3d"                    "DEP CLOUD ICE"        "s-1"
+state    real    PRE3d            ikj  misc    1         -     irh         "PRE3d"                    "EVAP OF RAIN"        "s-1"
+state    real    PRDS3d            ikj  misc    1         -     irh         "PRDS3d"                    "DEP SNOW"        "s-1"
+state    real    MNUCCC3d            ikj  misc    1         -     irh         "MNUCCC3d"                    "CHANGE Q DUE TO CONTACT FREEZ DROPLETS"        "s-1"
+state    real    PRA3d            ikj  misc    1         -     irh         "PRA3d"                    "ACCRETION DROPLETS BY RAIN"        "s-1"
+state    real    PRC3d            ikj  misc    1         -     irh         "PRC3d"                    "AUTOCONVERSION DROPLETS"        "s-1"
+state    real    PCC3d            ikj  misc    1         -     irh         "PCC3d"                    "COND/EVAP DROPLETS"        "s-1"
+state    real    MNUCCD3d            ikj  misc    1         -     irh         "MNUCCD3d"                    "CHANGE Q FREEZING AEROSOL (PRIM ICE NUCLEATION)"        "s-1"
+state    real    MNUCCR3d            ikj  misc    1         -     irh         "MNUCCR3d"                    "CHANGE Q DUE TO CONTACT FREEZ RAIN"        "s-1"
+state    real    PRAI3d            ikj  misc    1         -     irh         "PRAI3d"                    "CHANGE Q ACCRETION CLOUD ICE BY SNOW"        "s-1"
+state    real    PRCI3d            ikj  misc    1         -     irh         "PRCI3d"                    "CHANGE Q AUTOCONVERSIN CLOUD ICE TO SNOW"        "s-1"
+state    real    PSACWS3d            ikj  misc    1         -     irh         "PSACWS3d"                    "CHANGE Q DROPLET ACCRETION BY SNOW"        "s-1"
+state    real    PSACWI3d            ikj  misc    1         -     irh         "PSACWI3d"                    "CHANGE Q DROPLET ACCRETION BY CLOUD ICE"        "s-1"
+state    real    QMULTS3d            ikj  misc    1         -     irh         "QMULTS3d"                    "CHANGE Q DUE TO ICE MULT DROPLETS/SNOW"        "s-1"
+state    real    QMULTR3d            ikj  misc    1         -     irh         "QMULTR3d"                    "CHANGE Q DUE TO ICE RAIN/SNOW"        "s-1"
+state    real    PRACS3d            ikj  misc    1         -     irh         "PRACS3d"                    "CHANGE Q RAIN-SNOW COLLECTION"        "s-1"
+state    real    PCCN3d            ikj  misc    1         -     irh         "PCCN3d"                    "CHANGE Q DROPLET ACTIVATION"        "s-1"
+state    real    PSMLT3d            ikj  misc    1         -     irh         "PSMLT3d"                    "CHANGE Q MELTING SNOW TO RAIN"        "s-1"
+state    real    EVPMS3d            ikj  misc    1         -     irh         "EVPMS3d"                    "CHNAGE Q MELTING SNOW EVAPORATING"        "s-1"
+state    real    PIACR3d            ikj  misc    1         -     irh         "PIACR3d"                    "CHANGE QR, ICE-RAIN COLLECTION"        "s-1"
+state    real    PRACI3d            ikj  misc    1         -     irh         "PRACI3d"                    "CHANGE QI, ICE-RAIN COLLECTION"        "s-1"
+state    real    PIACRS3d            ikj  misc    1         -     irh         "PIACRS3d"                    "CHANGE QR, ICE RAIN COLLISION, ADDED TO SNOW"        "s-1"
+state    real    PRACIS3d            ikj  misc    1         -     irh         "PRACIS3d"                    "CHANGE QI, ICE RAIN COLLISION, ADDED TO SNOW"        "s-1"
+state    real    EPRD3d            ikj  misc    1         -     irh         "EPRD3d"                    "SUBLIMATION CLOUD ICE"        "s-1"
+state    real    EPRDS3d            ikj  misc    1         -     irh         "EPRDS3d"                    "SUBLIMATION SNOW"        "s-1"
+state    real    PRACG3d            ikj  misc    1         -     irh         "PRACG3d"                    "CHANGE IN Q COLLECTION RAIN BY GRAUPEL"        "s-1"
+state    real    PSACWG3d            ikj  misc    1         -     irh         "PSACWG3d"                    "CHANGE IN Q COLLECTION DROPLETS BY GRAUPEL"        "s-1"
+state    real    PGSACW3d            ikj  misc    1         -     irh         "PGSACW3d"                    "CONVERSION Q TO GRAUPEL DUE TO COLLECTION DROPLETS BY SNOW"        "s-1"
+state    real    PGRACS3d            ikj  misc    1         -     irh         "PGRACS3d"                    "CONVERSION Q TO GRAUPEL DUE TO COLLECTION RAIN BY SNOW"        "s-1"
+state    real    PRDG3d            ikj  misc    1         -     irh         "PRDG3d"                    "DEP OF GRAUPEL"        "s-1"
+state    real    EPRDG3d            ikj  misc    1         -     irh         "EPRDG3d"                    "SUB OF GRAUPEL"        "s-1"
+state    real    EVPMG3d            ikj  misc    1         -     irh         "EVPMG3d"                    "CHANGE Q MELTING OF GRAUPEL AND EVAPORATION"        "s-1"
+state    real    PGMLT3d            ikj  misc    1         -     irh         "PGMLT3d"                    "CHANGE Q MELTING OF GRAUPEL"        "s-1"
+state    real    PSACR3d            ikj  misc    1         -     irh         "PSACR3d"                    "CONVERSION DUE TO COLL OF SNOW BY RAIN"        "s-1"
+state    real    QMULTG3d            ikj  misc    1         -     irh         "QMULTG3d"                    "CHANGE Q DUE TO ICE MULT DROPLETS/GRAUPEL"        "s-1"
+state    real    QMULTRG3d            ikj  misc    1         -     irh         "QMULTRG3d"                    "CHANGE Q DUE TO ICE MULT RAIN/GRAUPEL"        "s-1"
+# END EXPLICIT LIGHTNING
+
+
+# Explicit lightning
+rconfig   integer  nssl_ipelec            namelist,physics      max_domains   0       rh       "Electrification selection"  ""      ""
+rconfig   integer  nssl_isaund            namelist,physics      1             12      rh       "Charge separation selection"  ""      ""
+rconfig   integer  nssl_iscreen           namelist,physics      1             0       rh       "Screening layer parameterization flag"  ""      ""
+rconfig   real     nssl_lightrad          namelist,physics      1             12000   rh       "discharge cylinder radius (m)"  ""      ""
+rconfig   integer  nssl_idischarge        namelist,physics      1             1       rh       "lightning discharge flag"  ""      ""
+rconfig   integer  nssl_ibrkd             namelist,physics      1             4       rh       "Critical Breakeven Efield profile selection"  ""      ""
+rconfig   real     nssl_ecrit             namelist,physics      1             120000  rh       "Critical Breakeven Efield magnitude for discharge (V/m) assuming height-constant Ecrit profile"  ""      ""
+rconfig   real     nssl_disfrac           namelist,physics      1             0.3     rh       "percentile of charge removed upon discharge (BLM)"  ""      ""
+# end Explicit lightning
+
+rconfig   integer  elec_physics           namelist,physics      1            0       irh       "elec_physics"            ""      ""
+
+# external WRF-ELEC package
+package   noelec             elec_physics==0             -             -
+package   eleclgt1d          elec_physics==1             -             scalar:scr,scw,sci,scs,sch,schl,sciona;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D,PRD3d,PRE3d,PRDS3d,MNUCCC3d,PRA3d,PRC3d,PCC3d,MNUCCD3d,MNUCCR3d,PRAI3d,PRCI3d,PSACWS3d,PSACWI3d,QMULTS3d,QMULTR3d,PRACS3d,PCCN3d,PSMLT3d,EVPMS3d,PIACR3d,PRACI3d,PIACRS3d,PRACIS3d,EPRD3d,EPRDS3d,PRACG3d,PSACWG3d,PGSACW3d,PGRACS3d,PRDG3d,EPRDG3d,EVPMG3d,PGMLT3d,PSACR3d,QMULTG3d,QMULTRG3d
+package   eleclgtmsz         elec_physics==2             -             scalar:scr,scw,sci,scs,sch,schl,sciona;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,flshi,flshn,flshp,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D,PRD3d,PRE3d,PRDS3d,MNUCCC3d,PRA3d,PRC3d,PCC3d,MNUCCD3d,MNUCCR3d,PRAI3d,PRCI3d,PSACWS3d,PSACWI3d,QMULTS3d,QMULTR3d,PRACS3d,PCCN3d,PSMLT3d,EVPMS3d,PIACR3d,PRACI3d,PIACRS3d,PRACIS3d,EPRD3d,EPRDS3d,PRACG3d,PSACWG3d,PGSACW3d,PGRACS3d,PRDG3d,EPRDG3d,EVPMG3d,PGMLT3d,PSACR3d,QMULTG3d,QMULTRG3d
+package   eleclgtmsznox      elec_physics==3             -             scalar:scr,scw,sci,scs,sch,schl,sciona,clnox;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,flshi,flshn,flshp,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D,PRD3d,PRE3d,PRDS3d,MNUCCC3d,PRA3d,PRC3d,PCC3d,MNUCCD3d,MNUCCR3d,PRAI3d,PRCI3d,PSACWS3d,PSACWI3d,QMULTS3d,QMULTR3d,PRACS3d,PCCN3d,PSMLT3d,EVPMS3d,PIACR3d,PRACI3d,PIACRS3d,PRACIS3d,EPRD3d,EPRDS3d,PRACG3d,PSACWG3d,PGSACW3d,PGRACS3d,PRDG3d,EPRDG3d,EVPMG3d,PGMLT3d,PSACR3d,QMULTG3d,QMULTRG3d
+
