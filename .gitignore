@@ -8,6 +8,27 @@
 # ignore files and sub dirs in the /phys directory
 phys/*
 # but do not ignore some files in phys
-!phys/Makefile
+!phys/module_mp_morr_two_moment.F
+!phys/module_mp_nssl_2mom.F
 !phys/module_microphysics_driver.F
 !phys/module_physics_init.F
+!phys/module_mp_ahm.F
+!phys/module_mp_suliaharrington.F
+!phys/Makefile
+
+!elec
+elec/*
+!elec/include_microphysics_driver_elec.F
+!elec/module_mp_screen.F
+!elec/module_mp_discharge.F
+!elec/module_mp_boxmgsetup.F
+!elec/module_commasmpi.F
+
+!dyn_em
+dyn_em/*
+!dyn_em/solve_em.F
+
+!Registry
+Registry/*
+!Registry/Registry.EM_COMMON
+!Registry/registry.elec
