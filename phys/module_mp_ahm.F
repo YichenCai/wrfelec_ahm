@@ -3179,7 +3179,7 @@ CONTAINS
             END IF
 
             IF(qvqvsi.lt.0.9)THEN
-               IF(qi(i,k).lt.1.e-8)THEN
+               IF(qi(i,k).lt.1.e-8 )THEN
                   qv(i,k) = qv(i,k) + qi(i,k)
                   t(i,k) = t(i,k) - qi(i,k)*xxls/cpm
                   qi(i,k) = 0.0
@@ -5223,8 +5223,6 @@ CONTAINS
 !#endif
 !      RETURN
 !      END FUNCTION wrf_dm_on_monitor
-
-
 
       END MODULE MODULE_MP_AHM
 
