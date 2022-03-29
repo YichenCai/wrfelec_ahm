@@ -552,8 +552,6 @@ CONTAINS
         ELSE
             IHAIL = 0
         ENDIF
-!        ! Test using hail for elec (now set in namelist)
-!        ihail = 1
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -586,8 +584,8 @@ CONTAINS
         RHOSN = 100.
         IF (IHAIL.EQ.0) THEN
             RHOG = 400.
-!            ! Test increase rhog
-!            RHOG = 800.
+            !            ! Test increase rhog
+            !            RHOG = 800.
         ELSE
             RHOG = 900.
         END IF
@@ -1082,10 +1080,10 @@ CONTAINS
         REAL, DIMENSION(its:ite, kts:kte, jts:jte) :: rho_igl ! air density calculated using ideal gas law
         real, dimension(its:ite, 1, kts:kte) :: t0,t1,t2,t3,t4,t5,t6,t7,t8,t9
         real, dimension(kts:kte) :: t2_1d,t3_1d,t5_1d,t6_1d,t8_1d
-!        REAL, DIMENSION(its:ite, kts:kte, jts:jte, 2, lc:lhab) :: fx ! =1: mass weigted, =2: number weighted
-!                fr, fnr, fi, fni, fs, fns, fc, fnc, fg, fng   ! terminal fall velocity
+        !        REAL, DIMENSION(its:ite, kts:kte, jts:jte, 2, lc:lhab) :: fx ! =1: mass weigted, =2: number weighted
+        !                fr, fnr, fi, fni, fs, fns, fc, fnc, fg, fng   ! terminal fall velocity
         REAL, DIMENSION(kts:kte) ::                                                                &
-!                fr1d, fnr1d, fi1d, fni1d, fs1d, fns1d, fc1d, fnc1d, fg1d, fng1d   & ! terminal fall velocity
+                !                fr1d, fnr1d, fi1d, fni1d, fs1d, fns1d, fc1d, fnc1d, fg1d, fng1d   & ! terminal fall velocity
                 umc1d, umr1d, umi1d, ums1d, umg1d ! 1d fall speed, pass inout micro
         double precision :: chgneg1,chgpos1,chgneg2,chgpos2,chgneg3,chgpos3
         double precision :: chgiona1,chgiona2,chgiona3,sctot3,scwtot,scrtot,scitot,scstot,schtot,schltot
@@ -1174,18 +1172,15 @@ CONTAINS
 
                     WVAR(I,K,J)     = 0.5
                     rho_igl(i,k,j) = P(i,k,j)/(R*T(i,k,j))
-                    if (not(rho_igl(i,k,j).gt.0.0)) then
-                        print*, "rho<=0.0!"
-                        print*, "rho_igl(i,k,j)=",rho_igl(i,k,j)
-                        print*, '(i,k,j,t)=',i,k,j,itimestep
-                        stop
-                    end if
 
                     ! currently mixing of number concentrations also is neglected (not coupled with PBL schemes)
 
                 END DO
             END DO
         END DO
+
+        !-----------------------------------------------------------------------
+        !Explicit lightning ----------------------------------------------------Init vars
         chgiona1 = 0.0d0
         chgiona2 = 0.0d0
         chgiona3 = 0.0d0
@@ -1267,21 +1262,13 @@ CONTAINS
         ENDIF
 
         IF ( present(scw) .and. ipelec > 0 ) THEN
-            print*, "---------------------------------------------------------------------------------------"
+            print*, "-----------------------------------------------------------"
             print*, "at it = ", itimestep, "dt = ", dt_in, " pre print"
             print*, "ims:ime, kms:kme, jms:jme"
             print*, ims,ime, kms,kme, jms,jme
             print*, "its:ite, kts:kte, jts:jte"
             print*, its,ite, kts,kte, jts,jte
 
-            ! if (itimestep<3) then
-            !     do j=jts,jte
-            !         do i=its,ite
-            !             print*, "----pre print----j = ", j, " i = ", i
-            !             print*, scw(i,kts:kte,j)
-            !         end do
-            !     end do
-            ! end if
             ! print*, "max of scw = ", maxval(scw), "at ", maxloc(scw)
             ! print*, "max of scr = ", maxval(scr), "at ", maxloc(scr)
             ! print*, "max of sci = ", maxval(sci), "at ", maxloc(sci)
@@ -1289,42 +1276,41 @@ CONTAINS
             ! print*, "max of sch = ", maxval(sch), "at ", maxloc(sch)
 
         endif
-
+        !-----------------------------------------------------------------------
+        !End Explicit lightning ------------------------------------------------
 
         do j=jts,jte      ! j loop (north-south)
             !-----------------------------------------------------------------------
-            !Explicit lightning ---------------------------------------------------- initialize for the slab
+            !Explicit lightning ---------------------------------------------------- init for the slab
 
             IF ( present(scw) .and. ipelec > 0 ) THEN
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 !!!!        Construct "an" array BEFORED UPDATED BY MORR_2MOM_MICRO
-                ! only for space charge, others done in micro
+                ! only for space charge, others done in MORR_2MOM_MICRO
 
                 an(:,1,:,:) = 0.0
                 an(its:ite,1,kts:kte,lt)   = th(its:ite,kts:kte,j)
-    !
-    !            !    mixing ratio (kg/kg)
-    !            an(its:ite,1,kts:kte,lv)   = qv(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,lc)   = qc(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,lr)   = qr(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,li)   = qi(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,ls)   = qs(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,lh)   = qg(its:ite,kts:kte,j)
-    !
-    !            !    number concentration (#/kg)
-    !            an(its:ite,1,kts:kte,lnc)  = qndrop(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,lnr)  = nr(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,lni)  = ni(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,lns)  = ns(its:ite,kts:kte,j)
-    !            an(its:ite,1,kts:kte,lnh)  = ng(its:ite,kts:kte,j)
-    !            !        IF ( lhl > 1 ) an(:,1,:,lnhl) = nhl(:,:,j)
+                !
+                !            !    mixing ratio (kg/kg)
+                !            an(its:ite,1,kts:kte,lv)   = qv(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,lc)   = qc(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,lr)   = qr(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,li)   = qi(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,ls)   = qs(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,lh)   = qg(its:ite,kts:kte,j)
+                !
+                !            !    number concentration (#/kg)
+                !            an(its:ite,1,kts:kte,lnc)  = qndrop(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,lnr)  = nr(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,lni)  = ni(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,lns)  = ns(its:ite,kts:kte,j)
+                !            an(its:ite,1,kts:kte,lnh)  = ng(its:ite,kts:kte,j)
+                !            !        IF ( lhl > 1 ) an(:,1,:,lnhl) = nhl(:,:,j)
 
                 !!!!  need to add ccn
-!                an(:,1,:,lccn) = 0.0
+                !                an(:,1,:,lccn) = 0.0
 
                 ! for use in nssl_sc
-!                t00(its:ite,1,kts:kte) = 380.0/p(its:ite,kts:kte,j)
-!                t2d(its:ite,1,kts:kte) = t(its:ite,kts:kte,j)
                 dz2d (its:ite,1,kts:kte) = dz (its:ite,kts:kte,j)
                 rho2d(its:ite,1,kts:kte) = rho_igl(its:ite,kts:kte,j)
 
@@ -1355,17 +1341,11 @@ CONTAINS
                                 sciona(i,k,j)) *dx*dy*dz(i,k,j)  ! [kg/m3]*[C/kg]*[m3] = [C]
                         chgneg1 = chgneg1 + Min(0.0, tmp)
                         chgpos1 = chgpos1 + Max(0.0, tmp)
-                        !          chgiona1 = chgiona1 + sciona(i,k,j)*rho_igl(i,k,j)*dx*dy*dz(i,k,j)
                         chgiona1 = chgiona1 + (an(i,1,k,lscpi)-an(i,1,k,lscni)) * ec * rho_igl(i,k,j) * dx*dy*dz(i,k,j) ! rho_igl looks like a mistake here
                     END DO
                 END DO
                 !!!  End chg...1
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!                if (j==56 .and. itimestep.ge.364) then
-!                    write(0,*) '********************************************'
-!                    write(0,*) 'passed in, an1d(k,lscw)=', an(21, 1, 27, lscw)
-!                end if
 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 !!!!       "denscale" list: =1, need to convert from kg-1 -> m-3
@@ -1378,19 +1358,10 @@ CONTAINS
                         an(its:ite,1,kts:kte,il) = an(its:ite,1,kts:kte,il) * rho_igl(its:ite,kts:kte,j)
                     ENDIF
                 ENDDO ! il
-!                if (j==56 .and. itimestep.ge.364) then
-!                    write(0,*) 'af * rho, an1d(k,lscw)=', an(21, 1, 27, lscw)
-!                    write(0,*) 'rho_igl(21,27,j)=', rho_igl(21,27,j)
-!                    write(0,*) 'i,j,k,t=', 21,j,27,itimestep
-!                end if
-
                 !!!!      End "denscale"
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             END IF
-
-
-
             !---------------------------------------------------------------------------
             !End Explicit lightning ----------------------------------------------------
 
@@ -1489,7 +1460,7 @@ CONTAINS
                 nc1d, nc_tend1d, iinum, C2PREC,CSED,ISED,SSED,GSED,RSED & !wrf-chem
                 !-----------------------------------------------------------------------
                 !Explicit lightning ----------------------------------------------------
-!                , fr1d, fnr1d, fi1d, fni1d, fs1d, fns1d, fc1d, fnc1d, fg1d, fng1d  & ! terminal fall velocity
+                !                , fr1d, fnr1d, fi1d, fni1d, fs1d, fns1d, fc1d, fnc1d, fg1d, fng1d  & ! terminal fall velocity
                 , umc1d, umr1d, umi1d, ums1d, umg1d & ! fall speed
                 , nstep, ipelec, ltrue &
                 , I, J, ITIMESTEP &
@@ -1554,7 +1525,7 @@ CONTAINS
                     umg(i,kts:kte,j) = umg1d(kts:kte)
 
                     csaci03d(i,kts:kte,j) = csaci0(kts:kte)/rho_igl(i,kts:kte,j)
-!                    csaci03d(i,kts:kte,j) = csaci0(kts:kte)
+                    !                    csaci03d(i,kts:kte,j) = csaci0(kts:kte)
                     chaci03d(i,kts:kte,j) = chaci0(kts:kte)/rho_igl(i,kts:kte,j)
                     chacs03d(i,kts:kte,j) = chacs0(kts:kte)/rho_igl(i,kts:kte,j)
                     csaci03d_morr(i,kts:kte,j) = csaci0_morr(kts:kte)
@@ -1716,12 +1687,8 @@ CONTAINS
 
 
             IF ( present( noninduc ) .and. ipelec >= 1 ) THEN
-!                t9(:,1,1) = 0.0
                 DO k = kts,kte
                     DO i = its,ite
-!                        if (t5(i,1,k).ne.0.0) then
-!                            write(0,*) 'it=', itimestep, 't5(',i,'  1', k, ')=', t5(i,1,k)
-!                        end if
                         induc(i,k,j)  = t5(i,1,k) ! schacw
                         noninduc(i,k,j) = (t2(i,1,k) + t3(i,1,k) + t6(i,1,k) + t8(i,1,k)) ! schaci + schacs
                         IF ( .not. ( noninduc(i,k,j) > -1.e-3 .and. noninduc(i,k,j) < 1.e-3 ) ) THEN
@@ -1730,7 +1697,7 @@ CONTAINS
                         ENDIF
                         IF ( .not. ( induc(i,k,j) > -1.e-3 .and. induc(i,k,j) < 1.e-3 ) ) THEN
                             write(0,*) 'problem with induc! i,j,k,induc = ',i,j,k,induc(i,k,j),t5(i,1,k)
-!                            STOP
+                            !                            STOP
                         ENDIF
                         IF ( present( rscghis_2d ) ) THEN
                             t9(i,1,1) = t9(i,1,1) + Abs( noninduc(i,k,j) )*dz(i,k,j)
@@ -1745,27 +1712,13 @@ CONTAINS
             ENDIF
 
             IF ( present( sciona ) .and. lnh > 1 .and. ipelec > 0) THEN
-                ! attach ions
-!                if (j==56 .and. itimestep.ge.363) then
-!                    write(0,*) 'bf scionatt, an1d(k,lscw)=', an(21, 1, 27, lscw)
-!                    write(0,*) 'bf scionatt, an1d(k,lscpi)=', an(21, 1, 27, lscpi)
-!                    write(0,*) 'bf scionatt, an1d(k,lscni)=', an(21, 1, 27, lscni)
-!                end if
+
                 CALL SCIONATT    &
                         &  (nx,ny,nz,na,j &
                         &  ,nor,nor &
                         &  ,dt,dz2d &
                         &  ,an &
-!                        &  ,rho2d,pii(its:ite,j,kts:kte) &
-!                        &  ,pn,wn &
-!                        &  ,dbz2d &
                         &  )
-!                if (j==56 .and. itimestep.ge.363) then
-!                    write(0,*) 'af scionatt, an1d(k,lscw)=', an(21, 1, 27, lscw)
-!                    write(0,*) 'af scionatt, an1d(k,lscpi)=', an(21, 1, 27, lscpi)
-!                    write(0,*) 'af scionatt, an1d(k,lscni)=', an(21, 1, 27, lscni)
-!                    write(0,*) 'i,j,k,t=', 21,j,27,itimestep
-!                end if
             ENDIF
 
             IF ( present(scw) .and. ipelec > 0 .and. lscw > 1 ) THEN
@@ -1793,40 +1746,6 @@ CONTAINS
                 !!!  End chg...2
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                !!!  Sedimentation (not used, done in micro now)
-                !        ! Test sedimentation:
-                !                if (itimestep==1) then
-                !                    an(:,1,kte,lscw) = 0
-                !                    do k = kte-1,kts,-1
-                !                        an(:,1,k,lscw) = an(:,1,k+1,lscw) + 1.0
-                !                    end do
-                !                end if
-                !
-                !                if (itimestep<=5) then
-!                DO i = its,ite
-!                    if (ltrue2d(i,j)) then ! if no hydrometeor, skip sedimentation
-!                        dz1d(kts:kte) = dz(i,kts:kte,j)
-!                        do il=lc,lhab ! c,r,i,s,g
-!                            to_sed(kts:kte) = an(i,1,kts:kte,lsc(il))
-!                            !                            print*, "------------------------------------------------"
-!                            !                            print*, "itimestep = ", itimestep
-!                            !                            print*, "i,j ", i, j, "il = ", il, "lsc(il) = ", lsc(il)
-!                            !                            print*, "to_sed pre-sed: ", to_sed
-!!                            call sc_sed1d(to_sed(kts:kte), fx(i,kts:kte,j,1,il), dz1d(kts:kte), nstep2d(i,j), dt &
-!!                                    ,ITS,ITE, JTS,JTE, KTS,KTE&
-!!                                    ,i,j,itimestep)
-!!                            call fallout1d(nx,ny,nz,nor,na,dtptmp,dtfrac,jgs,xvt(1,1,1,il), &
-!!                                    &              an,db1,lsc(il),0,xfall,dtz1,ix)
-!                            an(i,1,kts:kte,lsc(il)) = to_sed(kts:kte)
-!                            !                            print*, "to_sed post-sed: ", to_sed
-!                        end do
-!                    end if
-!                ENDDO ! i
-                !                end if ! itimestep
-                !!!  Sedimentation
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 !!!!       "denscale" list: =1, need to convert from m-3 back to kg-1
                 !!!!       Here includes ln(c,r,i,s,h), lsc(c,r,i,s,h)
@@ -1835,11 +1754,6 @@ CONTAINS
                         an(its:ite,1,kts:kte,il) = an(its:ite,1,kts:kte,il) / rho_igl(its:ite,kts:kte,j)
                     ENDIF
                 ENDDO ! il
-!                if (j==56 .and. itimestep.ge.363) then
-!                    write(0,*) 'af /rho, an1d(k,lscw)=', an(21, 1, 27, lscw)
-!                    write(0,*) 'rho_igl(21,27,j)=', rho_igl(21,27,j)
-!                    write(0,*) 'i,j,k,t=', 21,j,27,itimestep
-!                end if
                 !!!!      End "denscale" list
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1849,11 +1763,11 @@ CONTAINS
                 scs(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscs)
                 sch(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lsch)
                 sctot(its:ite,kts:kte,j)  = rho_igl(its:ite,kts:kte,j)*(scw(its:ite,kts:kte,j) &
-                                                                       +scr(its:ite,kts:kte,j) &
-                                                                       +sci(its:ite,kts:kte,j) &
-                                                                       +scs(its:ite,kts:kte,j) &
-                                                                       +sch(its:ite,kts:kte,j) &
-                                                                       +sciona(its:ite,kts:kte,j) ) ! to get C/m3 for RHS calc later on
+                        +scr(its:ite,kts:kte,j) &
+                        +sci(its:ite,kts:kte,j) &
+                        +scs(its:ite,kts:kte,j) &
+                        +sch(its:ite,kts:kte,j) &
+                        +sciona(its:ite,kts:kte,j) ) ! to get C/m3 for RHS calc later on
 
                 DO i = its,ite
                     IF ( i.le.(ids+2) .or. i.ge.(ide-2)  ) THEN
@@ -1874,11 +1788,11 @@ CONTAINS
                 DO k = kts,kte
                     DO i = its,ite
                         tmp =  rho_igl(i,k,j)*(an(i,1,k,lscw)+ &
-                                               an(i,1,k,lscr)+ &
-                                               an(i,1,k,lsci)+ &
-                                               an(i,1,k,lscs)+ &
-                                               an(i,1,k,lsch)+ &
-                                               sciona(i,k,j)) *dx*dy*dz(i,k,j)
+                                an(i,1,k,lscr)+ &
+                                an(i,1,k,lsci)+ &
+                                an(i,1,k,lscs)+ &
+                                an(i,1,k,lsch)+ &
+                                sciona(i,k,j)) *dx*dy*dz(i,k,j)
                         chgneg3 = chgneg3 + Min(0.0, tmp)
                         chgpos3 = chgpos3 + Max(0.0, tmp)
                         chgiona3 = chgiona3 + sciona(i,k,j)*rho_igl(i,k,j)*dx*dy*dz(i,k,j)
@@ -1896,21 +1810,21 @@ CONTAINS
                     scitot  = scitot + sci(i,k,j)*dv
                     scstot  = scstot + scs(i,k,j)*dv
                     schtot  = schtot + sch(i,k,j)*dv
-!                    schltot = schltot + schl(i,k,j)*dv
+                    !                    schltot = schltot + schl(i,k,j)*dv
 
                     scwmax = Max( scwmax, scw(i,k,j) )
                     scrmax = Max( scrmax, scr(i,k,j) )
                     scimax = Max( scimax, sci(i,k,j) )
                     scsmax = Max( scsmax, scs(i,k,j) )
                     schmax = Max( schmax, sch(i,k,j) )
-!                    IF ( lhl > 1 ) schlmax= Max(schlmax, schl(i,k,j) )
+                    !                    IF ( lhl > 1 ) schlmax= Max(schlmax, schl(i,k,j) )
 
                     scwmin = Min( scwmin, scw(i,k,j) )
                     scrmin = Min( scrmin, scr(i,k,j) )
                     scimin = Min( scimin, sci(i,k,j) )
                     scsmin = Min( scsmin, scs(i,k,j) )
                     schmin = Min( schmin, sch(i,k,j) )
-!                    IF ( lhl > 1 ) schlmin= Min(schlmin, schl(i,k,j) )
+                    !                    IF ( lhl > 1 ) schlmin= Min(schlmin, schl(i,k,j) )
 
                 ENDIF
 
@@ -1980,26 +1894,10 @@ CONTAINS
                    ENDIF
                    IF ( present(scw) .and. ipelec > 0 .and. mytask == 0 ) THEN !{
 #else
-                   IF ( present(scw) .and. ipelec > 0 ) THEN !{
+                    IF ( present(scw) .and. ipelec > 0 ) THEN !{
 #endif
-!                        write(0,*) 'pos/neg/tot 1 = ',chgpos1,chgneg1,chgpos1+chgneg1
-!                        write(0,*) 'pos/neg/tot 2 = ',chgpos2,chgneg2,chgpos2+chgneg2
-!                        write(0,*) 'pos/neg/tot 3 = ',chgpos3,chgneg3,chgpos3+chgneg3
-!                        write(0,*) 'chgiona1/2/3 = ',chgiona1,chgiona2,chgiona3
-!                        write(0,*) 'sctot3 = ',sctot3
-!                        write(0,*) 'scwtot,max,min  = ',scwtot, scwmax, scwmin
-!                        write(0,*) 'scrtot,max,min  = ',scrtot, scrmax, scrmin
-!                        write(0,*) 'scitot,max,min  = ',scitot, scimax, scimin
-!                        write(0,*) 'scstot,max,min  = ',scstot, scsmax, scsmin
-!                        write(0,*) 'schtot,max,min  = ',schtot, schmax, schmin
-!                        write(0,*) 'schltot,max,min = ',schltot,schlmax,schlmin
                     ENDIF
                 ENDIF
-!                if (j==56 .and. itimestep.ge.363) then
-!                    write(0,*) 'exiting, an1d(k,lscw)=', an(21, 1, 27, lscw)
-!                    write(0,*) 'i,j,k,t=', 21,j,27,itimestep
-!                    write(0,*) '********************************************'
-!                end if
             ENDIF ! ipelec
             !-----------------------------------------------------------------------
             !End Explicit lightning ------------------------------------------------
@@ -2047,22 +1945,6 @@ CONTAINS
             end do
         END DO
 
-        !        print*, "NSTEP = ", NSTEP
-        !        print*, "max(fv) = ", maxval(fv), "at level ", maxloc(fv)
-        !        print*, "max(dzq) = ", maxval(dzq), "at level ", maxloc(dzq)
-        !        print*, "max(sc1d) = ", maxval(sc1d), "at level ", maxloc(sc1d)
-        !        print*, "max(scfalout) = ", maxval(scfalout), "at level ", maxloc(scfalout)
-        !        print*, "max(scfaltnd) = ", maxval(scfaltnd), "at level ", maxloc(scfaltnd)
-        !        print*, "max(scsten) = ", maxval(scsten), "at level ", maxloc(scsten)
-
-        !        print*, "NSTEP = ", NSTEP
-        !        print*, "fv = ", fv(kts:kte)
-        !        print*, "dzq = ", dzq(kts:kte)
-        !        print*, "sc1d = ", sc1d(kts:kte)
-        !        print*, "scfalout = ", scfalout(kts:kte)
-        !        print*, "scfaltnd = ", scfaltnd(kts:kte)
-        !        print*, "scsten = ", scsten(kts:kte)
-
         sc1dori(kts:kte) = sc1d(kts:kte)
         sc1d(kts:kte) = sc1d(kts:kte) + dt*scsten(kts:kte)
         if (maxval(abs(sc1d)).ge.1.) then
@@ -2076,7 +1958,7 @@ CONTAINS
             write(0,*) 'nstep=',nstep
             write(0,*) 'scsten=',scsten
             write(0,*) 'dt=',dt
-!            stop
+            !            stop
         end if
     END SUBROUTINE SC_SED1D
 
@@ -2093,7 +1975,7 @@ CONTAINS
             QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
             nc3d,nc3dten,iinum, & ! wrf-chem
             c2prec,CSED,ISED,SSED,GSED,RSED  &  ! hm added, wrf-chem
-!            , fr, fnr, fi, fni, fs, fns, fc, fnc, fg, fng  & ! terminal fall velocity
+            !            , fr, fnr, fi, fni, fs, fns, fc, fnc, fg, fng  & ! terminal fall velocity
             , umc1d, umr1d, umi1d, ums1d, umg1d & ! fall speed
             , nstep, ipelec, ltrue &
             , I, J, ITIMESTEP &
@@ -2631,10 +2513,6 @@ CONTAINS
 
         mixedphasefac = 1.0
 
-        !        PRINT*, 'DA0LH,DA0LI,DA0LS = ',DA0LH,DA0LI,DA0LS
-        !        PRINT*, 'DAB0LH_IH,DAB0LH_SH = ',DAB0LH_IH,DAB0LH_SH
-        !        STOP
-
         iexy(:,:)=0 ! sets to zero the ones I might have forgotten
         !     snow
         iexy(ls,li) = 1
@@ -2654,7 +2532,7 @@ CONTAINS
 
         ! Initialization
 
-!        LAMC(kts:kte) = 0.0 ! safety precaution for use in induc charging
+        !        LAMC(kts:kte) = 0.0 ! safety precaution for use in induc charging
         scxacy = 0.0
         cxacy  = 0.0
         xdia   = 0.0
@@ -2841,12 +2719,6 @@ CONTAINS
         ! AIR DENSITY
 
         RHO(K) = PRES(K)/(R*T3D(K))
-        if (not(rho(k).gt.0.0)) then
-            print*, "rho<=0.0!"
-            print*, "rho(k)=",rho(k)
-            print*, '(i,k,j,t)=',i,k,j,itimestep
-            stop
-        end if
 
         ! ADD NUMBER CONCENTRATION DUE TO CUMULUS TENDENCY
         ! ASSUME N0 ASSOCIATED WITH CUMULUS PARAM RAIN IS 10^7 M^-4
@@ -3148,7 +3020,7 @@ CONTAINS
 
                 END IF
                 xdia(k,lc) = 1.0/LAMC(K)
-!                xdia(k,lc) = (PGAM(K)+1.)/LAMC(K)
+                !                xdia(k,lc) = (PGAM(K)+1.)/LAMC(K)
 
             END IF
 
@@ -3610,37 +3482,12 @@ CONTAINS
             ! HM 12/13/06, ADDED CONSERVATION OF RAIN SINCE PRE IS NEGATIVE
 
             DUM = (-PRACS(K)-PRACG(K)-PRE(K)-PRA(K)-PRC(K)+PSMLT(K)+PGMLT(K))*DT
-!            ! make sure sum sink < qr
-!            dum = -PRE(K)*dt
 
             IF (DUM.GT.QR3D(K).AND.QR3D(K).GE.QSMALL) THEN
 
                 RATIO = (QR3D(K)/DT+PRACS(K)+PRACG(K)+PRA(K)+PRC(K)-PSMLT(K)-PGMLT(K))/ &
                         (-PRE(K))
-!                ratio = qr3d(k) / dum
-!                tmppre = PRE(K)
                 PRE(K) = PRE(K)*RATIO
-!                if (ipelec>0) then
-!                    DUMtmp = (-PRACS(K)-PRACG(K)-PRE(K)-PRA(K)-PRC(K)+PSMLT(K)+PGMLT(K))*DT
-!                    if (DUMtmp.GT.QR3D(K).AND.QR3D(K).GE.QSMALL) then
-!                        write(0,*) '-----------------------------'
-!                        write(0,*) 'dum stil > qr'
-!                        write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!                        write(0,*) 'DUMtmp, QR3D(K)', DUMtmp, QR3D(K)
-!                        write(0,*) 'PRE(K), tmppre', PRE(K), tmppre
-!                        write(0,*) 'DUM, RATIO', DUM, RATIO
-!                        write(0,*) 'QR3D(K)/DT', QR3D(K)/DT
-!                        write(0,*) 'PRACS(K)+PRACG(K)+PRA(K)+PRC(K)-PSMLT(K)-PGMLT(K)', &
-!                                PRACS(K)+PRACG(K)+PRA(K)+PRC(K)-PSMLT(K)-PGMLT(K)
-!                        write(0,*) ', QR3D(K)/DT+...', &
-!                                QR3D(K)/DT+PRACS(K)+PRACG(K)+PRA(K)+PRC(K)-PSMLT(K)-PGMLT(K)
-!!                        write(0,*) 'stopping'
-!                        write(0,*) '-----------------------------'
-!!                        stop
-!                    end if
-!                    ! indiv sink rate threshold
-!                    pre(k) = max(pre(k),-qr3d(k)/dt)
-!                end if
 
             END IF
 
@@ -3716,26 +3563,7 @@ CONTAINS
             PCC(K) = DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT
             IF (PCC(K)*DT+DUMQC.LT.0.) THEN
                 PCC(K) = -DUMQC/DT
-                if (pcc(k)==(-1./0.)) then
-                    write(0,*) "pcc too large already"
-                    write(0,*) 'pcc(k),dt,dumqc=', pcc(k),dt,dumqc
-                end if
             END IF
-            if (pcc(k)==(-1./0.)) then
-                write(0,*) "************************************************************"
-                write(0,*) "************************************************************"
-                write(0,*) "********************PCC -Infinity***************************"
-                write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                write(0,*) 'PCC(K) = DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT'
-                write(0,*) 'dums, dumqv,dumqss=',dums, dumqv,dumqss
-                write(0,*) '1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2)=', 1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2)
-                write(0,*) 'XXLV(K), XXLV(K)**2, (CPM(K)*RV*DUMT**2)=', XXLV(K), XXLV(K)**2, (CPM(K)*RV*DUMT**2)
-                write(0,*) 'CPM(K), RV, dumt, DUMT**2=', CPM(K), RV, dumt, DUMT**2
-                write(0,*) 'dt=',dt
-                write(0,*) 'DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT=',DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT
-                write(0,*) "************************************************************"
-                write(0,*) "*********************End PCC debug*******************"
-            end if
 
             QV3DTEN(K) = QV3DTEN(K)-PCC(K)
             T3DTEN(K) = T3DTEN(K)+PCC(K)*XXLV(K)/CPM(K)
@@ -3879,7 +3707,7 @@ CONTAINS
 
                 END IF
                 xdia(k,lc) = 1.0/LAMC(K)
-!                xdia(k,lc) = (PGAM(K)+1.)/LAMC(K)
+                !                xdia(k,lc) = (PGAM(K)+1.)/LAMC(K)
 
                 ! TO CALCULATE DROPLET FREEZING
 
@@ -4549,13 +4377,13 @@ CONTAINS
                         LAMS(K)**(BS+3.)
                 NPRAI(K)=MIN(NPRAI(K),NI3D(K)/DT)
                 if (ipelec>0) then
-                !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-                ! Collision rate of snow-ice, morr (CSACI0_MORR)
-                CSACI0_MORR(K) = NPRAI(K)/EII
-!                CSACI0_MORR(K) = PI/4.* GAMMA(BS+3.)*ASN(K)/LAMS(K)**(BS+2.) ! Collision kernel ***CONS23=PI/4.*EII*GAMMA(BS+3.)
-!                CSACI0_MORR(K) = NI3D(K)*RHO(K)*N0S(K)/LAMS(K) ! Everything else
-!                print*, 'CSACI0_MORR=',CSACI0_MORR(k), 'i,j,k=', i,j,k
-!                print*, 'ni3d=',ni3d(k),'rho=',rho(k),'n0s=',n0s(k),'lams=',lams(k)
+                    !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+                    ! Collision rate of snow-ice, morr (CSACI0_MORR)
+                    CSACI0_MORR(K) = NPRAI(K)/EII
+                    !                CSACI0_MORR(K) = PI/4.* GAMMA(BS+3.)*ASN(K)/LAMS(K)**(BS+2.) ! Collision kernel ***CONS23=PI/4.*EII*GAMMA(BS+3.)
+                    !                CSACI0_MORR(K) = NI3D(K)*RHO(K)*N0S(K)/LAMS(K) ! Everything else
+                    !                print*, 'CSACI0_MORR=',CSACI0_MORR(k), 'i,j,k=', i,j,k
+                    !                print*, 'ni3d=',ni3d(k),'rho=',rho(k),'n0s=',n0s(k),'lams=',lams(k)
                 end if
             END IF
 
@@ -4813,31 +4641,18 @@ CONTAINS
 
             DUM = (-PRD(K)-MNUCCC(K)+PRCI(K)+PRAI(K)-QMULTS(K)-QMULTG(K)-QMULTR(K)-QMULTRG(K) &
                     -MNUCCD(K)+PRACI(K)+PRACIS(K)-EPRD(K)-PSACWI(K))*DT
-!            ! make sure sum sink < qi
-!            dum = (PRCI(K)+PRAI(K)+PRACI(K)+PRACIS(K)-EPRD(K))*dt ! sum sink rate
 
             IF (DUM.GT.QI3D(K).AND.QI3D(K).GE.QSMALL) THEN
 
                 RATIO = (QI3D(K)/DT+PRD(K)+MNUCCC(K)+QMULTS(K)+QMULTG(K)+QMULTR(K)+QMULTRG(K)+ &
                         MNUCCD(K)+PSACWI(K))/ &
                         (PRCI(K)+PRAI(K)+PRACI(K)+PRACIS(K)-EPRD(K))
-!                RATIO = QI3D(K) / dum
 
                 PRCI(K) = PRCI(K)*RATIO
                 PRAI(K) = PRAI(K)*RATIO
                 PRACI(K) = PRACI(K)*RATIO
                 PRACIS(K) = PRACIS(K)*RATIO
                 EPRD(K) = EPRD(K)*RATIO
-!                if (ipelec>0) then
-!                    ! indiv. sink rate threshold
-!                    dumtmp = (prci(k)+prai(k)+praci(k)+pracis(k)-eprd(k))*dt
-!                    ratiotmp = qi3d(k)/dumtmp
-!!                    prci(k) = min(prci(k),qi3d(k)/dt)
-!!                    prai(k) = min(prai(k),qi3d(k)/dt)
-!!                    praci(k) = min(praci(k),qi3d(k)/dt)
-!!                    pracis(k) = min(pracis(k),qi3d(k)/dt)
-!!                    eprd(k) = max(eprd(k),-qi3d(k)/dt)
-!                end if
 
             END IF
 
@@ -4845,14 +4660,11 @@ CONTAINS
 
             DUM=((PRACS(K)-PRE(K))+(QMULTR(K)+QMULTRG(K)-PRC(K))+(MNUCCR(K)-PRA(K))+ &
                     PIACR(K)+PIACRS(K)+PGRACS(K)+PRACG(K))*DT
-!            ! make sure sum sink < qr
-!            dum = (-PRE(K)+QMULTR(K)+QMULTRG(K)+PRACS(K)+MNUCCR(K)+PIACR(K)+PIACRS(K)+PGRACS(K)+PRACG(K))*dt ! sum sink rate
 
             IF (DUM.GT.QR3D(K).AND.QR3D(K).GE.QSMALL) THEN
 
                 RATIO = (QR3D(K)/DT+PRC(K)+PRA(K))/ &
                         (-PRE(K)+QMULTR(K)+QMULTRG(K)+PRACS(K)+MNUCCR(K)+PIACR(K)+PIACRS(K)+PGRACS(K)+PRACG(K))
-!                RATIO = QR3D(K) / dum
 
                 PRE(K) = PRE(K)*RATIO
                 PRACS(K) = PRACS(K)*RATIO
@@ -4863,18 +4675,6 @@ CONTAINS
                 PIACRS(K) = PIACRS(K)*RATIO
                 PGRACS(K) = PGRACS(K)*RATIO
                 PRACG(K) = PRACG(K)*RATIO
-!                if (ipelec>0) then
-!                    ! indiv sink rate threshold
-!                    pre(k) = max(pre(k),-qr3d(k)/dt)
-!                    piacr(k) = min(piacr(k),qr3d(k)/dt)
-!                    mnuccr(k) = min(mnuccr(k),qr3d(k)/dt)
-!                    qmultr(k) = min(qmultr(k),qr3d(k)/dt)
-!                    qmultrg(k) = min(qmultrg(k),qr3d(k)/dt)
-!                    piacrs(k) = min(piacrs(k),qr3d(k)/dt)
-!                    pgracs(k) = min(pgracs(k),qr3d(k)/dt)
-!                    pracs(k) = min(pracs(k),qr3d(k)/dt)
-!                    pracg(k) = min(pracg(k),qr3d(k)/dt)
-!                end if
 
             END IF
 
@@ -4884,21 +4684,13 @@ CONTAINS
             IF (IGRAUP.EQ.0) THEN
 
                 DUM = (-PRDS(K)-PSACWS(K)-PRAI(K)-PRCI(K)-PRACS(K)-EPRDS(K)+PSACR(K)-PIACRS(K)-PRACIS(K))*DT
-!                ! make sure sum sink < qs
-!                dum = (-EPRDS(K)+PSACR(K))*dt
 
                 IF (DUM.GT.QNI3D(K).AND.QNI3D(K).GE.QSMALL) THEN
 
                     RATIO = (QNI3D(K)/DT+PRDS(K)+PSACWS(K)+PRAI(K)+PRCI(K)+PRACS(K)+PIACRS(K)+PRACIS(K))/(-EPRDS(K)+PSACR(K))
-!                    RATIO = QNI3D(K) / dum
 
                     EPRDS(K) = EPRDS(K)*RATIO
                     PSACR(K) = PSACR(K)*RATIO
-!                    if (ipelec>0) then
-!                        ! indiv sink rate threshold
-!                        psacr(k) = min(psacr(k),qni3d(k)/dt)
-!                        eprds(k) = max(eprds(k),-qni3d(k)/dt)
-!                    end if
 
                 END IF
 
@@ -4921,20 +4713,13 @@ CONTAINS
             ! CONSERVATION OF QG
 
             DUM = (-PSACWG(K)-PRACG(K)-PGSACW(K)-PGRACS(K)-PRDG(K)-MNUCCR(K)-EPRDG(K)-PIACR(K)-PRACI(K)-PSACR(K))*DT
-!            ! make sure sum sink < qg
-!            dum = (-EPRDG(K))*dt
 
             IF (DUM.GT.QG3D(K).AND.QG3D(K).GE.QSMALL) THEN
 
                 RATIO = (QG3D(K)/DT+PSACWG(K)+PRACG(K)+PGSACW(K)+PGRACS(K)+PRDG(K)+MNUCCR(K)+PSACR(K)+&
                         PIACR(K)+PRACI(K))/(-EPRDG(K))
-!                ratio = qg3d(k) / dum
 
                 EPRDG(K) = EPRDG(K)*RATIO
-!                if (ipelec>0) then
-!                    ! indiv sink rate threshold
-!                    eprdg(k) = max(eprdg(k),-qg3d(k)/dt)
-!                end if
 
             END IF
 
@@ -5010,27 +4795,7 @@ CONTAINS
             PCC(K) = DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT
             IF (PCC(K)*DT+DUMQC.LT.0.) THEN
                 PCC(K) = -DUMQC/DT
-                if (pcc(k)==(-1./0.)) then
-                    write(0,*) "pcc too large already"
-                    write(0,*) 'pcc(k),dt,dumqc=', pcc(k),dt,dumqc
-                end if
             END IF
-            if (pcc(k)==(-1./0.)) then
-                write(0,*) "************************************************************"
-                write(0,*) "************************************************************"
-                write(0,*) "********************PCC -Infinity***************************"
-                write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                write(0,*) 'PCC(K) = DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT'
-                write(0,*) 'dums, dumqv,dumqss=',dums, dumqv,dumqss
-                write(0,*) '1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2)=', 1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2)
-                write(0,*) 'XXLV(K), XXLV(K)**2, (CPM(K)*RV*DUMT**2)=', XXLV(K), XXLV(K)**2, (CPM(K)*RV*DUMT**2)
-                write(0,*) 'CPM(K), RV, dumt, DUMT**2=', CPM(K), RV, dumt, DUMT**2
-                write(0,*) 'dt=',dt
-                write(0,*) 'DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT=',DUMS/(1.+XXLV(K)**2*DUMQSS/(CPM(K)*RV*DUMT**2))/DT
-                write(0,*) "************************************************************"
-                write(0,*) "*********************End PCC debug*******************"
-            end if
-
 
             QV3DTEN(K) = QV3DTEN(K)-PCC(K)
             T3DTEN(K) = T3DTEN(K)+PCC(K)*XXLV(K)/CPM(K)
@@ -5279,7 +5044,7 @@ CONTAINS
             umx(k,lr) = umr
             umx(k,li) = umi
             umx(k,ls) = ums
-!            umx(k,lh) = umg*8.
+            !            umx(k,lh) = umg*8.
             umx(k,lh) = umg
             umc1d(k)  = umc
             umr1d(k)  = umr
@@ -5442,7 +5207,6 @@ CONTAINS
         !End explicit lightning ------------------------------------------------
         !-----------------------------------------------------------------------
 
-
         DO K = KTE-1,KTS,-1
             FALTNDR = (FALOUTR(K+1)-FALOUTR(K))/DZQ(K)
             FALTNDI = (FALOUTI(K+1)-FALOUTI(K))/DZQ(K)
@@ -5479,23 +5243,6 @@ CONTAINS
             DUMG(K) = DUMG(K)+FALTNDG*DT/NSTEP
             DUMFNG(K) = DUMFNG(K)+FALTNDNG*DT/NSTEP
 
-            if(ipelec>0.and.i==7.and.j==9.and.k==9.and.itimestep==4442) then
-                write(0,*) 'point check----------------------------'
-                write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                write(0,*) 'N,NSTEP',N,NSTEP
-                write(0,*) 'DUMR(K) = QR3D(K)+QR3DTEN(K)*DT*rho(k)'
-                write(0,*) '->(k)  :', DUMRtmp(K),  QR3D(K),  QR3DTEN(K),  DT,rho(k)
-                write(0,*) '->(k+1):', DUMRtmp(K+1),QR3D(k+1),QR3DTEN(k+1),DT,rho(k+1)
-                write(0,*) 'FALOUTR    = FR   *DUMR'
-                write(0,*) '->(K)  :', FALOUTR(K),   FR(K),  DUMRtmp(K),  FR(K)*DUMRtmp(K)
-                write(0,*) '->(K+1):', FALOUTR(K+1), FR(K+1),DUMRtmp(K+1),FR(K+1)*DUMRtmp(K+1)
-                write(0,*) 'FALOUTR(K+1),FALOUTR(K)', FALOUTR(K+1),FALOUTR(K)
-                write(0,*) 'FALOUTR(K+1)-FALOUTR(K), DZQ(K)', FALOUTR(K+1)-FALOUTR(K), DZQ(K)
-                write(0,*) 'FALTNDR, DT',FALTNDR, DT
-                write(0,*) 'QRSTEN(K), RHO(K)', QRSTEN(K), rho(k)
-                write(0,*) 'DUMR(K)', DUMR(K)
-                write(0,*) 'point end------------------------------'
-            end if
 
             !-----------------------------------------------------------------------
             !Explicit lightning ----------------------------------------------------
@@ -5570,16 +5317,16 @@ CONTAINS
         IF (IPELEC>0) THEN
 
             if (csi_morr) then
-!                qxmin(ls) = 1.E-8
-!                qxmin(lh) = 1.E-8
-!                qxmin(lc) = QSMALL
-!!                qxmin(lr) = 1.E-8
-!                qxmin(li) = QSMALL
+                !                qxmin(ls) = 1.E-8
+                !                qxmin(lh) = 1.E-8
+                !                qxmin(lc) = QSMALL
+                !!                qxmin(lr) = 1.E-8
+                !                qxmin(li) = QSMALL
             end if
 
             !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
             IF (QI3D(K).GE.QXMIN(LI) .AND. QNI3D(K).GE.QXMIN(LS) .AND. not(csi_morr)) THEN
-!            IF (QNI3D(K).GE.1.E-8 .AND. QI3D(K).GE.QSMALL) THEN
+                !            IF (QNI3D(K).GE.1.E-8 .AND. QI3D(K).GE.QSMALL) THEN
                 IF (NI3D(K).GT.QSMALL .AND. NS3D(K).GT.QSMALL) THEN
                     XV_I = QI3D(K)/NI3D(K)/RHOI
                     XV_S = QNI3D(K)/NS3D(K)/RHOSN
@@ -5591,22 +5338,6 @@ CONTAINS
                     CSACI0(K) = ESICLSN * RVT * AA2 * &
                             (NS3D(K)*RHO(K)) * (NI3D(K)*RHO(K)) * &
                             ((CINU + 2.)*XV_I/(CINU + 1.) + XV_S)
-!                    CSACI0(K) = RVT * AA2 * &
-!                            ((CINU + 2.)*XV_I/(CINU + 1.) + XV_S) ! Collection kernel
-!                    CSACI0(K) = N0S(K)/LAMS(K) * NI3D(K)*RHO(K) ! Everything else
-!                    if (csaci0(k)>1e6) then
-!                        print*, 'ycbug!!! csaci0 = ', csaci0(k)
-!                        print*, 'k=',k,'i=',i,'j=',j, 'it=',itimestep
-!                        print*, 'rvt=',rvt, 'aa2=',aa2
-!                        print*, 'xv_i=', xv_i, 'qi3d=',qi3d(k), 'ni3d=',ni3d(k), 'rhoi=',rhoi
-!                        print*, 'xv_s=', xv_s, 'qni3d=',qni3d(k), 'ns3d=',ns3d(k), 'rhosn=',rhosn
-!                        print*, 'cinu=',cinu
-!                        stop
-!                    end if
-                    !
-                    !                    PRINT*, 'QI,QS PRESENT.'
-                    !                    PRINT*, 'CSACI0=',CSACI0(K)
-                    !                    !                    STOP
                 END IF
             END IF
 
@@ -5614,22 +5345,10 @@ CONTAINS
             ! Collision rate of graupel-ice (CHACI0)
             IF (QI3D(K).GE.QXMIN(LI) .AND. QG3D(K).GE.QXMIN(LH)) THEN
                 IF (NG3D(K).GT.QSMALL .AND. NI3D(K).GT.QSMALL) THEN
-!                    UMG = AGN(K)*CONS7/(LAMG(K)**BG)
-!                    UMI = AIN(K)*CONS28/(LAMI(K)**BI)
-!                    dum=(rhosu/rho(k))**0.54
-!                    UMG = MIN(UMG,20.*dum)
-!                    UMI = MIN(UMI,1.2*(rhosu/rho(k))**0.35)
                     vt = sqrt((umx(k,lh)-umx(k,li))**2 + 0.04*umx(k,lh)*umx(k,li))
 
-!                    DIAG = 2.*((3.*QG3D(K))/(4.*PI*NG3D(K)*RHOG))**(1./3.)
-!                    DIAI = 2.*((3.*QI3D(K))/(4.*PI*NI3D(K)*RHOI))**(1./3.)
                     DIAG = xdia(k,lh)
                     DIAI = xdia(k,li)
-
-!                    umx(k,li) = umi
-!                    umx(k,lh) = umg
-!                    xdia(k,li) = diai
-!                    xdia(k,lh) = diag
 
                     ! Graupel-ice collision efficiency
                     ! Currently used as constant 1.
@@ -5640,14 +5359,6 @@ CONTAINS
                             (DA0LH*DIAG**2 + &
                                     DAB0LH_IH*DIAG*DIAI + &
                                     DA0LI*DIAI**2)
-                    !                    PRINT*, 'QI,QG PRESENT at t=', itimestep, 'i,j,k=',i,j,k
-                    !                    PRINT*, 'UMG,UMI=', UMG,UMI
-                    !                    PRINT*, 'NG3D(K)=',NG3D(K)
-                    !                    PRINT*, 'NI3D(K)=',NI3D(K)
-                    !                    PRINT*, 'RHO(K)=',RHO(K)
-                    !                    PRINT*, 'VT=',VT,'DIAG,DIAI=',DIAG,DIAI,'EHICLSN=',EHICLSN
-                    !                    PRINT*, 'CHACI0(K)=',CHACI0(K)
-                    !                    STOP
                 END IF
             END IF
 
@@ -5655,22 +5366,10 @@ CONTAINS
             ! Collision rate of graupel-snow (CHACS0)
             IF (QNI3D(K).GE.QXMIN(LS) .AND. QG3D(K).GE.QXMIN(LH)) THEN
                 IF (NG3D(K).GT.QSMALL .AND. NS3D(K).GT.QSMALL) THEN
-!                    UMG = AGN(K)*CONS7/(LAMG(K)**BG)
-!                    UMS = ASN(K)*CONS3/(LAMS(K)**BS)
-!                    dum=(rhosu/rho(k))**0.54
-!                    UMG = MIN(UMG,20.*dum)
-!                    UMS = MIN(UMS,1.2*dum)
                     vt = sqrt((umx(k,lh)-umx(k,ls))**2 + 0.04*umx(k,lh)*umx(k,ls))
 
-!                    DIAG = 2.*((3.*QG3D(K))/(4.*PI*NG3D(K)*RHOG))**(1./3.)
-!                    DIAS = 2.*((3.*QNI3D(K))/(4.*PI*NS3D(K)*RHOSN))**(1./3.)
                     DIAG = xdia(k,lh)
                     DIAS = xdia(k,ls)
-
-!                    umx(k,ls) = ums
-!                    umx(k,lh) = umg
-!                    xdia(k,ls) = dias
-!                    xdia(k,lh) = diag
 
                     ! Graupel-snow collision efficiency.
                     ! Defined as a linear function of snow size.
@@ -5689,11 +5388,6 @@ CONTAINS
                             (DA0LH*DIAG**2 + &
                                     DAB0LH_SH*DIAG*DIAS + &
                                     DA0LS*DIAS**2)
-                    !                    PRINT*, 'QS,QG PRESENT.'
-                    !                    PRINT*, 'UMG,UMS=', UMG,UMS
-                    !                    PRINT*, 'VT=',VT,'DIAG,DIAS=',DIAG,DIAS,'EHSCLSN=',EHSCLSN
-                    !                    PRINT*, 'CHACS0=',CHACS0(K)
-                    !!                    STOP
                 END IF
             END IF
 
@@ -5717,9 +5411,9 @@ CONTAINS
             DO il = lc,lhab
                 scx(k,il) = an1d(k,lsc(il))
                 IF ( Abs(scx(k,il)) > 1000.e-9 ) THEN
-!                    write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(k,il),an1d(k,il),an1d(k,ln(il))
-!                    write(0,*) 'at it, ix,jy,kz = ',itimestep ,i, j, k
-!                    STOP
+                    !                    write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(k,il),an1d(k,il),an1d(k,ln(il))
+                    !                    write(0,*) 'at it, ix,jy,kz = ',itimestep ,i, j, k
+                    !                    STOP
                 ENDIF
             ENDDO
             cionp(k) = an1d(k,lscpi) ! #/m3
@@ -5765,11 +5459,11 @@ CONTAINS
                 IF ( j.gt.(jds+2) .and. j.lt.(jde-2) ) THEN
                     DO il=ls,lhab ! loop through all ice habits (s,h)
                         DO ic=li,ls ! loop through all mixed phase particles (i,s)
-!                    il=lh
-!                    ic=li
+                            !                    il=lh
+                            !                    ic=li
                             IF ( iexy(il,ic) .eq. 1  ) THEN ! (si,hi,hs)
                                 IF (an1d(k,il) .gt. qxmin(il)  .and. an1d(k,ic) .gt. qxmin(ic) &
-                                    .and. an1d(k,ln(il)).gt.qsmall .and. an1d(k,ln(ic)).gt.qsmall) THEN  ! make sure there are particles
+                                        .and. an1d(k,ln(il)).gt.qsmall .and. an1d(k,ln(ic)).gt.qsmall) THEN  ! make sure there are particles
                                     IF ( t3d(k) .lt. tfr .and. t3d(k) .gt. thnuc ) THEN ! 0.0=tfreezing and -38C= assumed T for homogeneous ice nucleation
                                         IF ( iremoveqwfrz == 1 ) THEN
                                             qcwtmp(k) = Max(0.0, an1d(k,lc) - dtp*MNUCCC(k) )
@@ -5810,31 +5504,6 @@ CONTAINS
                                             scxacy(k,il,ic) = qconkq*(xdia(k,ic)**qconm)   &
                                                     &  *((abs(umx(k,il)-umx(k,ic)))**qconn)   &
                                                     &  *ftelwc*cfce15
-!                                            if(abs(scxacy(k,il,ic)).gt.1e-14) then
-!                                                write(0,*) '--------------------------------------------'
-!                                                write(0,*) 'individual scxacy(k,il,ic)=', scxacy(k,il,ic)
-!                                                write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!                                                write(0,*) 'il,ic=', il,ic
-!                                                write(0,*) 'qconkq,qconm,qconn,ftelwc=',qconkq,qconm,qconn,ftelwc
-!                                                if (il==lh) then
-!                                                    write(0,*) 'umx il=lh', umx(k,il)
-!                                                elseif (il==ls) then
-!                                                    write(0,*) 'umx il=ls', umx(k,il)
-!                                                end if
-!
-!                                                if (ic==li) then
-!                                                    write(0,*) 'umx ic=li', umx(k,ic)
-!                                                elseif (ic==ls) then
-!                                                    write(0,*) 'umx ic==ls', umx(k,ic)
-!                                                end if
-!                                                write(0,*) 'xdia(k,ic)', xdia(k,ic)
-!                                                write(0,*) 'temcg(k),qcwtmp(k),exy(k,il,lc)', temcg(k),qcwtmp(k),exy(k,il,lc)
-!                                                write(0,*) 'cxacy=', cxacy(k,il,ic)
-!                                                write(0,*) 'ecollmx,1-exy', ecollmx, 1.0-exy(k,il,ic)
-!                                                write(0,*) 'cxacy(k,il,ic)*ecollmx*(1.0-exy(k,il,ic))=', cxacy(k,il,ic)*ecollmx*(1.0-exy(k,il,ic))
-!                                                write(0,*) 'total scxacy(k,il,ic)=', cxacy(k,il,ic)*ecollmx*(1.0-exy(k,il,ic))*scxacy(k,il,ic)
-!                                                write(0,*) '--------------------------------------------'
-!                                            end if
                                             if ( scxacy(k,il,ic) .gt. 0.0 ) then ! {
                                                 scxacy(k,il,ic) = min(delqxxa(ic),scxacy(k,il,ic))
                                             end if
@@ -5846,18 +5515,7 @@ CONTAINS
                                         ! Formula 7 in M05 to get total space charge per collisions within a grid box
                                         tmp = scxacy(k,il,ic)
                                         scxacy(k,il,ic) =   &
-                                                &  cxacy(k,il,ic)*ecollmx*(1.0-exy(k,il,ic))*scxacy(k,il,ic) !
-!                                        if(abs(scxacy(k,il,ic)).gt.1e-14) then
-!                                            write(0,*) 'total scxacy(k,il,ic)=', scxacy(k,il,ic)
-!                                            write(0,*) 'idvd  scxacy(k,il,ic)=', tmp
-!                                            write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!                                            write(0,*) 'il,ic=', il,ic
-!                                            write(0,*) 'cxacy(k,il,ic)=',cxacy(k,il,ic)
-!                                            write(0,*) 'qconkq,qconm,qconn,ftelwc=',qconkq,qconm,qconn,ftelwc
-!                                            write(0,*) 'umx(k,il),umx(k,ic)', umx(k,il),umx(k,ic)
-!                                            write(0,*) 'xdia(k,ic)', xdia(k,ic)
-!                                            write(0,*) 'temcg(k),qcwtmp(k),exy(k,il,lc)', temcg(k),qcwtmp(k),exy(k,il,lc)
-!                                        end if
+                                                &  cxacy(k,il,ic)*ecollmx*(1.0-exy(k,il,ic))*scxacy(k,il,ic)
                                         IF ( Abs( scxacy(k,il,ic) ) .gt. scxacymax ) THEN ! scxacymax=3000e-12
                                             scxacy(k,il,ic) = Min(scxacymax, Max( -scxacymax, scxacy(k,il,ic) ) )
                                         ENDIF
@@ -5877,9 +5535,9 @@ CONTAINS
 
                     ! Loop for graupel-droplet inductive charging
                     ! Mansell et al 2005, adapted from Ziegler et al 1991
-                    IF ( erbnd .gt. 0.0 .and. fdgt .gt. 0.0 .and. ipelec .ge. 3 ) THEN
+                    IF ( erbnd .gt. 0.0 .and. fdgt .gt. 0.0 .and. ipelec .ge. 3 ) THEN ! erbnd=0.01, fdgt=1
                         DO il=ls,lhab
-!                        il=lh
+                            !                        il=lh
                             IF ( iexy(il,lc) .eq. 1 ) THEN
                                 qcwtmp(k) = Max(0.0, an1d(k,lc) - dtp*MNUCCC(k) )
                                 if ( an1d(k,il) .gt. qxmin(il) .and. qcwtmp(k) .gt. qxmin(lc)    &
@@ -5910,7 +5568,7 @@ CONTAINS
                                             write(0,*) '(1.0/3.0)*gf1p5=',(1.0/3.0)*gf1p5
                                             write(0,*) 'an1d(k,lsc(il)), an1d(k,ln(il))',an1d(k,lsc(il)), an1d(k,ln(il))
                                             write(0,*) 'an1d(k,lsc(il))/an1d(k,ln(il))=',an1d(k,lsc(il))/an1d(k,ln(il))
-!!                                            STOP
+                                            !!                                            STOP
                                         end if
                                         if ( scxacy(k,il,lc) .gt. 0.0 ) then
                                             scxacy(k,il,lc) = min(delqxw,scxacy(k,il,lc))
@@ -5949,13 +5607,6 @@ CONTAINS
                 schacs(k) = elecfac*scxacy(k,lh,ls) ! non-induc
                 schacr(k) = elecfac*scxacy(k,lh,lr) ! =0
 
-!                IF ( lhl .gt. 1 ) THEN
-!                    schlacw(k) = elecfac*scxacy(k,lhl,lc)
-!                    schlaci(k) = elecfac*scxacy(k,lhl,li)
-!                    IF ( lis  > 1 ) schlacis(k) = elecfac*scxacy(k,lhl,lis)
-!                    schlacs(k) = elecfac*scxacy(k,lhl,ls)
-!                    schlacr(k) = elecfac*scxacy(k,lhl,lr)
-!                ENDIF
 
             ELSE
 
@@ -5968,13 +5619,6 @@ CONTAINS
                 schacs(k) = 0.0
                 schacr(k) = 0.0
                 scxacy(k,:,:)=0.0
-!                IF ( lhl .gt. 1 ) THEN
-!                    schlacw(k) = 0.0
-!                    schlaci(k) = 0.0
-!                    IF ( lis > 1 ) schlacis(k) = 0.0
-!                    schlacs(k) = 0.0
-!                    schlacr(k) = 0.0
-!                ENDIF
             END IF ! x boundary check
 
 
@@ -6019,30 +5663,30 @@ CONTAINS
                 !  Cloud ice
                 !
                 psccimi(k) =    il5(k)*(fsccw(k)*PSACWI(k) & ! PSACWI: equate to qiacw: collection of cw by ci, cw->ci
-!                        &  +fsccw(k)*qwfrzc(k)   & ! qwfrzc: homogeneous frz in nssl, not used since this is done later instantaneously
-                                &  +fsccw(k)*mnuccc(k) & ! mnuccc: equate to qwctfzc, here includs contact and immersion frz, cw->ci
-                                &  +fsccw(k)*(qmults(k)+qmultg(k)) & ! h-m ice multip. on sw & gw, cw->ci
-                                &  +fscrw(k)*(qmultr(k)+qmultrg(k)) & ! h-m ice multip. on sw & gw, rw->ci
-                                )
-!                        &  +fsccw(k)*qicichr(k))   & ! qicichr: Hobbs-Rangno ice enhancement, not used in nssl either
-!                        &  +il5(k)*fscrw(k)*(1. - ifrzs)*qrfrzs(k)   & ! not used since ifrzs=1 in nssl
-!                        &  +fschw(k)*qhmul1(k)   & ! qhmul1: in nssl, hw->ci, hallet-mossop ice multip. from graup
-!                        &  +fschl(k)*qhlmul1(k)  & ! hail not considered
-!                        &  +fscsw(k)*qsmul(k) & ! qsmul: in nssl, sw->ci, hallet-mossop ice multip. from snow
+                        !                        &  +fsccw(k)*qwfrzc(k)   & ! qwfrzc: homogeneous frz in nssl, not used since this is done later instantaneously
+                        &  +fsccw(k)*mnuccc(k) & ! mnuccc: equate to qwctfzc, here includs contact and immersion frz, cw->ci
+                        &  +fsccw(k)*(qmults(k)+qmultg(k)) & ! h-m ice multip. on sw & gw, cw->ci
+                        &  +fscrw(k)*(qmultr(k)+qmultrg(k)) & ! h-m ice multip. on sw & gw, rw->ci
+                        )
+                !                        &  +fsccw(k)*qicichr(k))   & ! qicichr: Hobbs-Rangno ice enhancement, not used in nssl either
+                !                        &  +il5(k)*fscrw(k)*(1. - ifrzs)*qrfrzs(k)   & ! not used since ifrzs=1 in nssl
+                !                        &  +fschw(k)*qhmul1(k)   & ! qhmul1: in nssl, hw->ci, hallet-mossop ice multip. from graup
+                !                        &  +fschl(k)*qhlmul1(k)  & ! hail not considered
+                !                        &  +fscsw(k)*qsmul(k) & ! qsmul: in nssl, sw->ci, hallet-mossop ice multip. from snow
 
                 psccimd(k) =    fscci(k)*(&
                         &   il5(k)*(-PRCI(k)   & ! prci: equate to qscni, autoconversion, ci->sw
-                        &           -PRAI(k)   & ! prai: equate to qsaci, ci collected by sw, ci->sw
-                        &           -praci(k)  & ! praci: equate to qraci, ci collected by rw to produce gw, ci->gw
-                        &           -pracis(k) & ! PRACIS: equate to qracis, ci collected by rw to produce sw, ci->sw
-                        &           +min(0.,eprd(k)) & ! EPRD: neg, sublimation of ice, v->ci
-                        &          ) &
-!                        &  -qraci(k)   & ! qraci: ci->rw ci collected by rain
-!                        &  -qhaci(k)   & ! qraci: ci->gw ci collected by graup
-!                        &  -qhlaci(k) & ! collection of ci by hail, no hail, not used
+                                &           -PRAI(k)   & ! prai: equate to qsaci, ci collected by sw, ci->sw
+                                &           -praci(k)  & ! praci: equate to qraci, ci collected by rw to produce gw, ci->gw
+                                &           -pracis(k) & ! PRACIS: equate to qracis, ci collected by rw to produce sw, ci->sw
+                                &           +min(0.,eprd(k)) & ! EPRD: neg, sublimation of ice, v->ci
+                                &          ) &
+                        !                        &  -qraci(k)   & ! qraci: ci->rw ci collected by rain
+                        !                        &  -qhaci(k)   & ! qraci: ci->gw ci collected by graup
+                        !                        &  -qhlaci(k) & ! collection of ci by hail, no hail, not used
                         )
                 ! conservation of ice charge
-                if (abs(psccimd(k)).gt.0.0 ) then
+                if (abs(psccimd(k)).gt.0.0) then
                     if (sign(1.0,psccimd(k)).eq.sign(1.0,scx(k,li))) then
                         write(0,*) 'psccimd scx same sign', psccimd(k), scx(k,li)
                         write(0,*) 'i,j,k,t=', i,j,k,itimestep
@@ -6056,35 +5700,6 @@ CONTAINS
                         write(0,*) 'i,j,k,t=', i,j,k,itimestep
                         write(0,*) 'il5(k)',il5(k)
                         write(0,*) 'an1d(k,li)',an1d(k,li)
-!                        if (psccimi(k).ne.0.0) then
-!                            write(0,*) 'psccimi(k)',psccimi(k)
-!                            write(0,*) 'fsccw(k),PSACWI(k)',fsccw(k),PSACWI(k)
-!                            write(0,*) 'fsccw(k),mnuccc(k)',fsccw(k),mnuccc(k)
-!                            write(0,*) 'fsccw(k),qmults(k),qmultg(k)',fsccw(k),qmults(k),qmultg(k)
-!                            write(0,*) 'fscrw(k),qmultr(k),qmultrg(k)',fscrw(k),qmultr(k),qmultrg(k)
-!                            write(0,*) 'terms for psccimi'
-!                            write(0,*) fsccw(k)*PSACWI(k),fsccw(k)*mnuccc(k),fsccw(k)*(qmults(k)+qmultg(k)),&
-!                                    fscrw(k)*(qmultr(k)+qmultrg(k))
-!                        end if
-!                        write(0,*) 'psccimd(k)',psccimd(k)
-!                        write(0,*) 'fscci(k)',fscci(k)
-!                        write(0,*) 'PRCI(k)',PRCI(k)
-!                        write(0,*) 'PRAI(k)',PRAI(k)
-!                        write(0,*) 'praci(k)',praci(k)
-!                        write(0,*) 'pracis(k)',pracis(k)
-!                        write(0,*) 'eprd(k)',eprd(k)
-!                        write(0,*)
-!                        write(0,*) 'dt*(psccimi(k)+psccimd(k))',dt*(psccimi(k)+psccimd(k))
-!                        write(0,*) 'scx(k,li)',scx(k,li)
-!                        if (sign(1.0,dt*(psccimi(k)+psccimd(k))).ne.sign(1.0,scx(k,li)) ) then
-!                            if (abs(dt*(psccimi(k)+psccimd(k))).gt.abs(scx(k,li))) then
-!                                write(0,*) 'sign change due to mass transfer' ! takes up 97%
-!                                write(0,*) 'dt*cimi,dt*cimd',dt*psccimi(k),dt*psccimd(k)
-!                            else
-!                                write(0,*) 'increased back'
-!                                write(0,*) 'dt*cimi,dt*cimd',dt*psccimi(k),dt*psccimd(k)
-!                            end if
-!                        end if
                         dumtmp = il5(k)*(-PRCI(k)   & ! prci: equate to qscni, autoconversion, ci->sw
                                 &           -PRAI(k)   & ! prai: equate to qsaci, ci collected by sw, ci->sw
                                 &           -praci(k)  & ! praci: equate to qraci, ci collected by rw to produce gw, ci->gw
@@ -6095,7 +5710,6 @@ CONTAINS
                         if (an1d(k,li)+dumtmp*dt.lt.0.0) then
                             write(0,*) 'neg qi in psc conserve',an1d(k,li)+dumtmp*dt
                             write(0,*) 'an1d(k,li),dumtmp*dt',an1d(k,li),dumtmp*dt
-                            !                            write(0,*) 'MNUCCR(k),pre(k)',MNUCCR(k),pre(k)
                         else if (an1d(k,li)+dumtmp*dt.gt.0.0) then
                             write(0,*) 'pos qi in pscci conserve',an1d(k,li)+dumtmp*dt
                             write(0,*) 'an1d(k,li),dumtmp*dt',an1d(k,li),dumtmp*dt
@@ -6113,18 +5727,18 @@ CONTAINS
                 psccwmi(k) = 0.0
                 psccwmd(k) =    fsccw(k)*(&
                         &  -PRA(k) & ! PRA: equate to qracw, cw collected by rw, cw->rw
-                        &  -PRC(k) & ! PRC: equate to qrcnw, cw autoconvert to rw, cw->rw
-                        &  +il5(k)*(-PSACWI(k)   & ! PSACWI: equate to qiacw: collection of cw by ci
-                                 &  -mnuccc(k)    & ! mnuccc: equate to qwctfzc, here includs contact and immersion frz
-                                 &  -PGSACW(k)  & ! PGSACW: cw collected by sw to produce gw, cw->gw
-                                 &  -qmults(k)-qmultg(k) & ! h-m ice multip. on sw & gw, cw->ci
-                                 &  -PSACWS(k)  & ! PSACWS: equate to qsacw, cw collected by sw, after deducted by PGSACW and QMULTS, cw->sw
-                                 &  -PSACWG(k)  & ! PSACWG: equate to qhacw, cw collected by gw, after deducted by QMULTG, cw->gw
-!                                 &  -qwfrz(k)    & ! homo freezing: done later
+                                &  -PRC(k) & ! PRC: equate to qrcnw, cw autoconvert to rw, cw->rw
+                                &  +il5(k)*(-PSACWI(k)   & ! PSACWI: equate to qiacw: collection of cw by ci
+                                        &  -mnuccc(k)    & ! mnuccc: equate to qwctfzc, here includs contact and immersion frz
+                                        &  -PGSACW(k)  & ! PGSACW: cw collected by sw to produce gw, cw->gw
+                                        &  -qmults(k)-qmultg(k) & ! h-m ice multip. on sw & gw, cw->ci
+                                        &  -PSACWS(k)  & ! PSACWS: equate to qsacw, cw collected by sw, after deducted by PGSACW and QMULTS, cw->sw
+                                        &  -PSACWG(k)  & ! PSACWG: equate to qhacw, cw collected by gw, after deducted by QMULTG, cw->gw
+                                        !                                 &  -qwfrz(k)    & ! homo freezing: done later
                                         ) &
-                        & +min(0.,pcc(k)) & ! evap of cw, v->cw
-!                        &  -qiihr(k)  & ! qiihr: Hobbs-Rangno ice enhancement, not used in nssl either
-!                        &  -qhlacw(k) & ! hail not used
+                                & +min(0.,pcc(k)) & ! evap of cw, v->cw
+                        !                        &  -qiihr(k)  & ! qiihr: Hobbs-Rangno ice enhancement, not used in nssl either
+                        !                        &  -qhlacw(k) & ! hail not used
                         )
                 ! conservation of droplet charge
                 if (abs(psccwmd(k)).gt.0.0 ) then
@@ -6170,22 +5784,22 @@ CONTAINS
                 !  Snow
                 !
                 pscswmi(k) =    il5(k)*(fscci(k)*PRCI(k) & ! PRCI: equate to qscni, autoconversion, ci->sw
-                                &  +fscci(k)*PRAI(k)   & ! PRAI: equate to qsaci, ci collected by sw, ci->sw
-!                                &  +fscrw(k)*ifrzs*qrfrzs(k)   & ! rw frozen to form sw, not used in morr since all rw frozen to gw
-                                &  +fscci(k)*PRACIS(k) & ! PRACIS: equate to qracis, ci collected by rw to produce sw, ci->sw
-                                &  +fsccw(k)*PSACWS(k) & ! PSACWS: equate to qsacw, cw collected by sw, after deducted by PGSACW and QMULTS, cw->sw
-                                &  +fscrw(k)*PIACRS(k) & ! PIACRS: equate to qracis, rw collected by ci to produce sw, rw->sw
-                                &  +fscrw(k)*PRACS(k)  & ! PRACS: equate to qsacr, rw collected by sw, rw->sw
-                                )
+                        &  +fscci(k)*PRAI(k)   & ! PRAI: equate to qsaci, ci collected by sw, ci->sw
+                        !                                &  +fscrw(k)*ifrzs*qrfrzs(k)   & ! rw frozen to form sw, not used in morr since all rw frozen to gw
+                        &  +fscci(k)*PRACIS(k) & ! PRACIS: equate to qracis, ci collected by rw to produce sw, ci->sw
+                        &  +fsccw(k)*PSACWS(k) & ! PSACWS: equate to qsacw, cw collected by sw, after deducted by PGSACW and QMULTS, cw->sw
+                        &  +fscrw(k)*PIACRS(k) & ! PIACRS: equate to qracis, rw collected by ci to produce sw, rw->sw
+                        &  +fscrw(k)*PRACS(k)  & ! PRACS: equate to qsacr, rw collected by sw, rw->sw
+                        )
                 pscswmd(k) =    fscsw(k)*(&
                         &  -il5(k)*PSACR(k) & ! PSACR: sw collected by rw to produce gw, sw->gw
-!                        &  - qhacs(k) & ! qhacs: sw collected by gw, not used in morr
-!                        &  - qhlacs(k)  & ! hail not included
-                        &  + (1-il5(k))*psmlt(k)*mixedphasefac & ! psmlt: equate to qsmlr, negative, sw melting, rw->sw
-                        &  + (1-il5(k))*min(0.,evpms(k)) & ! evpms: evaporation of melted snow, negative, v-sw
-                        &  + il5(k)*min(0.,eprds(k)) & ! eprds: sublimation snow, negative, v-sw
-!                        &  - qsmul(k)  & ! h-m multiplication, but qs not involved in morr
-!                        &  + min(0.0,qscev(k)) & ! =0 in nssl anyway
+                                !                        &  - qhacs(k) & ! qhacs: sw collected by gw, not used in morr
+                                !                        &  - qhlacs(k)  & ! hail not included
+                                &  + (1-il5(k))*psmlt(k)*mixedphasefac & ! psmlt: equate to qsmlr, negative, sw melting, rw->sw
+                                &  + (1-il5(k))*min(0.,evpms(k)) & ! evpms: evaporation of melted snow, negative, v-sw
+                                &  + il5(k)*min(0.,eprds(k)) & ! eprds: sublimation snow, negative, v-sw
+                        !                        &  - qsmul(k)  & ! h-m multiplication, but qs not involved in morr
+                        !                        &  + min(0.0,qscev(k)) & ! =0 in nssl anyway
                         )
                 ! conservation of snow charge
                 if (abs(pscswmd(k)).gt.0.0 ) then
@@ -6219,35 +5833,35 @@ CONTAINS
                     end if
                 end if
 
-!                fscsw2(k) = 0.0
-!                tmp =  qx(k,ls) + dtp*(pqswi(k) + pqswd(k) - qsshr(k)) ! should this add back the shed rain mass? probably!
-!                IF ( tmp > qxmin(ls) .and. qsshr(k) < 0.0 ) THEN
-!                    chgtmp = scx(k,ls) + dtp*(pscswmi(k) - pscswmd(k))
-!                    fscsw2(k) = chgtmp/tmp
-!                    pscswmd(k) =  pscswmd(k) + fscsw2(k)*qsshr(k)
-!                ENDIF
+                !                fscsw2(k) = 0.0
+                !                tmp =  qx(k,ls) + dtp*(pqswi(k) + pqswd(k) - qsshr(k)) ! should this add back the shed rain mass? probably!
+                !                IF ( tmp > qxmin(ls) .and. qsshr(k) < 0.0 ) THEN
+                !                    chgtmp = scx(k,ls) + dtp*(pscswmi(k) - pscswmd(k))
+                !                    fscsw2(k) = chgtmp/tmp
+                !                    pscswmd(k) =  pscswmd(k) + fscsw2(k)*qsshr(k)
+                !                ENDIF
 
                 !
                 !  Graupel
                 !
                 pschwmi(k) =    il5(k)*(fscci(k)*PRACI(k) & ! PRACI: equate to qracif, ci collide w/ rw to produce gw, ci->gw
-                                &  +fscrw(k)*PIACR(k) & ! PIACR: equate to qiacrf, rw collide w/ ci to produce gw, rw->gw
-                                &  +fscrw(k)*MNUCCR(k) & ! MNUCCR: equate to qrfrz, rw frozen into gw, rw->gw
-                                &  +fsccw(k)*PGSACW(k) & ! PGSACW: cw collected by sw to produce gw, cw->gw
-                                &  +fsccw(k)*PSACWG(k) & ! PSACWG: equate to qhacw, cw collected by gw, cw->gw
-                                &  +fscrw(k)*PGRACS(k) & ! PGRACS: rw collected by sw to produce gw, rw->gw
-                                &  +fscsw(k)*PSACR(k) & ! PSACR: sw collected by rw to produce gw, sw->gw
-                                &  +fscrw(k)*PRACG(k) & ! PRACG: equate to qhacr, rw collected by gw, rw->gw
-                )
-!                        &  +fscsw(k)*qhacs(k) & ! sw collected by gw, not included in morr
-!                        &  +fscci(k)*qhaci(k) & ! sw collected by ci, not included in morr
+                        &  +fscrw(k)*PIACR(k) & ! PIACR: equate to qiacrf, rw collide w/ ci to produce gw, rw->gw
+                        &  +fscrw(k)*MNUCCR(k) & ! MNUCCR: equate to qrfrz, rw frozen into gw, rw->gw
+                        &  +fsccw(k)*PGSACW(k) & ! PGSACW: cw collected by sw to produce gw, cw->gw
+                        &  +fsccw(k)*PSACWG(k) & ! PSACWG: equate to qhacw, cw collected by gw, cw->gw
+                        &  +fscrw(k)*PGRACS(k) & ! PGRACS: rw collected by sw to produce gw, rw->gw
+                        &  +fscsw(k)*PSACR(k) & ! PSACR: sw collected by rw to produce gw, sw->gw
+                        &  +fscrw(k)*PRACG(k) & ! PRACG: equate to qhacr, rw collected by gw, rw->gw
+                        )
+                !                        &  +fscsw(k)*qhacs(k) & ! sw collected by gw, not included in morr
+                !                        &  +fscci(k)*qhaci(k) & ! sw collected by ci, not included in morr
                 pschwmd(k) =    fschw(k)*(&
-!                        &  - qhlcnh(k)   & ! hw converted to hl, hail not used
+                        !                        &  - qhlcnh(k)   & ! hw converted to hl, hail not used
                         &  +(1-il5(k))*pgmlt(k)*mixedphasefac   & ! pgmlt: equate to qhmlr, negative, gw melting, rw->gw
-                        &  +(1-il5(k))*min(0.,evpmg(k))   & ! evpmg: negative, evap of melted graup, v->gw
-                        &  +il5(k)*min(0.,eprdg(k))   & ! eprdg: negative, sublimation of graup, v->gw
-!                        &  -qhmul1(k) ! h-m multiplication, but qg not involved in morr
-                            )
+                                &  +(1-il5(k))*min(0.,evpmg(k))   & ! evpmg: negative, evap of melted graup, v->gw
+                                &  +il5(k)*min(0.,eprdg(k))   & ! eprdg: negative, sublimation of graup, v->gw
+                        !                        &  -qhmul1(k) ! h-m multiplication, but qg not involved in morr
+                        )
                 ! conservation of graupel charge
                 if (abs(pschwmd(k)).gt.0.0 ) then
                     if (sign(1.0,pschwmd(k)).eq.sign(1.0,scx(k,lh))) then
@@ -6268,7 +5882,7 @@ CONTAINS
                         if (an1d(k,lh)+dumtmp*dt.lt.0.0) then
                             write(0,*) 'neg qh in psc conserve',an1d(k,lh)+dumtmp*dt
                             write(0,*) 'an1d(k,lh),dumtmp*dt',an1d(k,lh),dumtmp*dt
-!                            write(0,*) 'MNUCCR(k),pre(k)',MNUCCR(k),pre(k)
+                            !                            write(0,*) 'MNUCCR(k),pre(k)',MNUCCR(k),pre(k)
                         else if (an1d(k,lh)+dumtmp*dt.gt.0.0) then
                             write(0,*) 'pos qh in pschw conserve',an1d(k,lh)+dumtmp*dt
                             write(0,*) 'an1d(k,lh),dumtmp*dt',an1d(k,lh),dumtmp*dt
@@ -6280,13 +5894,13 @@ CONTAINS
                     end if
                 end if
 
-!                fschw2(k) = 0.0
-!                tmp =  qx(k,lh) + dtp*(pqhwi(k) + pqhwd(k) - qhshr(k)) ! should this add back the shed rain mass? probably!
-!                IF ( tmp > qxmin(lh) .and. qhshr(k) < 0.0 ) THEN
-!                    chgtmp = scx(k,lh) + dtp*(pschwmi(k) - pschwmd(k))
-!                    fschw2(k) = chgtmp/tmp
-!                    pschwmd(k) =  pschwmd(k) + fschw2(k)*qhshr(k)
-!                ENDIF
+                !                fschw2(k) = 0.0
+                !                tmp =  qx(k,lh) + dtp*(pqhwi(k) + pqhwd(k) - qhshr(k)) ! should this add back the shed rain mass? probably!
+                !                IF ( tmp > qxmin(lh) .and. qhshr(k) < 0.0 ) THEN
+                !                    chgtmp = scx(k,lh) + dtp*(pschwmi(k) - pschwmd(k))
+                !                    fschw2(k) = chgtmp/tmp
+                !                    pschwmd(k) =  pschwmd(k) + fschw2(k)*qhshr(k)
+                !                ENDIF
 
                 !
                 !  Rain
@@ -6295,39 +5909,9 @@ CONTAINS
                         &  fsccw(k)*PRA(k) & ! PRA: equate to qracw, cw collected by rw, cw->rw
                         &  +fsccw(k)*PRC(k) & ! PRC: equate to qrcnw, cw autoconvert to rw, cw->rw
                         &  +(1-il5(k))*mixedphasefac*(-fscsw(k)*psmlt(k)  & ! psmlt: equate to qsmlr, negative, sw melting, rw->sw
-                                                   &  -fschw(k)*pgmlt(k)  & ! pgmlt: equate to qhmlr, negative, gw melting, rw->gw
-!                                                   &  -fschl(k)*qhlmlr(k) & ! hail not used
-                                                        )
-!                if (.not.(abs(pscrwmi(k)).le.1.e4)) then
-!                    write(0,*) '*******************************************'
-!                    write(0,*) 'pscrwmi blowing', pscrwmi(k)
-!                    write(0,*) 'k=', k
-!                    write(0,*) 'fsccw(k), PRA(k)=', fsccw(k), PRA(k)
-!                    write(0,*) 'fsccw(k), PRC(k)=', fsccw(k), PRC(k)
-!                    write(0,*) 'fsccw(k) = scx(k,lc)/an1d(k,lc)'
-!                    write(0,*) 'scx(k,lc), an1d(k,lc)', scx(k,lc), an1d(k,lc)
-!                    write(0,*) 'il5(k), 1-il5(k)=', il5(k), 1-il5(k)
-!                    write(0,*) 'mixedphasefac=', mixedphasefac
-!                    write(0,*) '-fscsw(k), psmlt(k)', -fscsw(k), psmlt(k)
-!                    write(0,*) 'fscsw(k) = scx(k,ls)/an1d(k,ls)'
-!                    write(0,*) 'scx(k,ls), an1d(k,ls)', scx(k,ls), an1d(k,ls)
-!                    write(0,*)
-!                    write(0,*) '-fschw(k), pgmlt(k)', -fschw(k), pgmlt(k)
-!                    write(0,*) 'fschw(k) = scx(k,lh)/an1d(k,lh)'
-!                    write(0,*) 'scx(k,lh), an1d(k,lh)', scx(k,lh), an1d(k,lh)
-!
-!                    if (isnan(pscrwmi(k))) then
-!                        write(0,*) 'pscrwmi=nan', pscrwmi(k)
-!                        write(0,*) 'stopping'
-!                        print*, 'stopping'
-!                        write(0,*) '*******************************************'
-!                        STOP
-!                    end if
-!                    write(0,*) '*******************************************'
-!                end if
-!                        &  -fschl2(k)*qhlshr(k) & ! ail not used
-!                        &  -fschw2(k)*qhshr(k) &
-!                        &  -fscsw2(k)*qsshr(k) &
+                                &  -fschw(k)*pgmlt(k)  & ! pgmlt: equate to qhmlr, negative, gw melting, rw->gw
+                                !                                                   &  -fschl(k)*qhlmlr(k) & ! hail not used
+                                )
                 pscrwmd(k) =     fscrw(k)*(&
                         &  il5(k)*(-PIACR(k) & ! PIACR: equate to qiacr, rw collected by ci to produce gw, rw->gw
                                 &  -MNUCCR(k) & ! MNUCCR: equate to qrfrz, rw frozen into gw, rw->gw
@@ -6337,8 +5921,8 @@ CONTAINS
                                 &  -PRACS(k) & ! PRACS: equate to qsacr, rw collected by sw, rw->sw, =0 for warm
                                 &  -PRACG(k) & ! PRACG: equate to qhacr, rw collected by gw, rw->gw, =0 for warm
                                 ) &
-!                        &  -qhlacr(k)  & ! hail not used
-                        &  +min(0.0,pre(k)) & ! pre: equate to qrcev, evap of rw, negative only, rw->qv
+                                !                        &  -qhlacr(k)  & ! hail not used
+                                &  +min(0.0,pre(k)) & ! pre: equate to qrcev, evap of rw, negative only, rw->qv
                         )
                 ! conservation of rain charge
                 if (abs(pscrwmd(k)).gt.0.0 ) then
@@ -6394,11 +5978,11 @@ CONTAINS
                 !
                 psccwi(k) =  psccwi(k)   &
                         & + max(-schacw(k),0.0)   &
-!                        & + max(-schlacw(k),0.0)   &
+                        !                        & + max(-schlacw(k),0.0)   &
                         & + max(-scsacw(k),0.0)
                 psccwd(k) =  psccwd(k)   &
                         & + min(-schacw(k),0.0)   &
-!                        & + min(-schlacw(k),0.0)   &
+                        !                        & + min(-schlacw(k),0.0)   &
                         & + min(-scsacw(k),0.0)
 
                 qcwtmp(k) = Max(0.0, qc3d(k) + dtp*qc3dten(k))
@@ -6409,7 +5993,7 @@ CONTAINS
                     IF ( Abs(cpqc) .gt. scwppmx .and.   &
                             & (psccwi(k)+psccwd(k)) .ne. 0.0 .and.   &
                             & Sign(1.0, scx(k,lc)) .eq.   &
-                            & Sign(1.0, (psccwi(k)+psccwd(k)))) THEN
+                                    & Sign(1.0, (psccwi(k)+psccwd(k)))) THEN
                         cpqc0 = Sign(scwppmx,cpqc)
                         scfac = (cpqc0*ccwtmp - scx(k,lc) -   &
                                 &       dtp*(psccwmi(k)+psccwmd(k)))/   &
@@ -6429,17 +6013,17 @@ CONTAINS
 
                 IF ( scfac .lt. 1.0 .and. QC3D(k) .gt. qxmin(lc) ) THEN
                     schacw(k) = scfac*schacw(k)
-!                    schlacw(k) = scfac*schlacw(k)
+                    !                    schlacw(k) = scfac*schlacw(k)
                     scsacw(k) = scfac*scsacw(k)
                     psccwi(k) = 0.0
                     psccwd(k) = 0.0
                     psccwi(k) =  psccwi(k)   &
                             & + max(-schacw(k),0.0)   &
-!                            & + max(-schlacw(k),0.0)   &
+                            !                            & + max(-schlacw(k),0.0)   &
                             & + max(-scsacw(k),0.0)
                     psccwd(k) =  psccwd(k)   &
                             & + min(-schacw(k),0.0)   &
-!                            & + min(-schlacw(k),0.0)   &
+                            !                            & + min(-schlacw(k),0.0)   &
                             & + min(-scsacw(k),0.0)
                 ENDIF
 
@@ -6448,11 +6032,11 @@ CONTAINS
                 !
                 psccii(k) =  psccii(k)   &
                         & + max(-schaci(k),0.0)   &
-    !                    & + max(-schlaci(k),0.0)   &
+                        !                    & + max(-schlaci(k),0.0)   &
                         & + max(-scsaci(k),0.0)
                 psccid(k) =  psccid(k)   &
                         & + min(-schaci(k),0.0)   &
-    !                    & + min(-schlaci(k),0.0)   &
+                        !                    & + min(-schlaci(k),0.0)   &
                         & + min(-scsaci(k),0.0)
 
                 qcitmp = Max(0.0, qi3d(k) + dtp*QI3DTEN(k))
@@ -6463,7 +6047,7 @@ CONTAINS
                     IF ( Abs(cpci) .gt. scippmx .and.   &
                             & (psccii(k)+psccid(k) ) .ne. 0.0 .and.   &
                             & Sign(1.0,scx(k,li)) .eq.   &
-                            & Sign(1.0,(psccii(k)+psccid(k)))) THEN
+                                    & Sign(1.0,(psccii(k)+psccid(k)))) THEN
                         cpci0 = Sign(scippmx,cpci)
                         scfac = (cpci0*ccitmp - scx(k,li) -    &
                                 &       dtp*(psccimi(k)+psccimd(k)))/   &
@@ -6486,17 +6070,17 @@ CONTAINS
 
                 IF ( scfac .lt. 1.0 ) THEN
                     schaci(k) = scfac*schaci(k)
-!                    schlaci(k) = scfac*schlaci(k)
+                    !                    schlaci(k) = scfac*schlaci(k)
                     scsaci(k) = scfac*scsaci(k)
                     psccii(k) = 0.0
                     psccid(k) = 0.0
                     psccii(k) =  psccii(k)   &
                             & + max(-schaci(k),0.0)   &
-!                            & + max(-schlaci(k),0.0)   &
+                            !                            & + max(-schlaci(k),0.0)   &
                             & + max(-scsaci(k),0.0)
                     psccid(k) =  psccid(k)   &
                             & + min(-schaci(k),0.0)   &
-!                            & + min(-schlaci(k),0.0)   &
+                            !                            & + min(-schlaci(k),0.0)   &
                             & + min(-scsaci(k),0.0)
                 ENDIF
 
@@ -6504,16 +6088,16 @@ CONTAINS
                 !  rain
                 !
                 pscrwi(k) =  pscrwi(k)  &
-!                        & + max(-schacr(k),0.0)    &
+                        !                        & + max(-schacr(k),0.0)    &
                         & + max(-scsacr(k),0.0)
-!                        & + max(scsshr(k),0.0)     & !Canosa & List 93
-!                        & + max(schshr(k),0.0)       !Canosa & List 93
+                !                        & + max(scsshr(k),0.0)     & !Canosa & List 93
+                !                        & + max(schshr(k),0.0)       !Canosa & List 93
 
                 pscrwd(k) =  pscrwd(k)  &
-!                        & + min(-schacr(k),0.0)    &
+                        !                        & + min(-schacr(k),0.0)    &
                         & + min(-scsacr(k),0.0)
-!                        & + min(scsshr(k),0.0)     & !Canosa & List 93
-!                        & + min(schshr(k),0.0)       !Canosa & List 93
+                !                        & + min(scsshr(k),0.0)     & !Canosa & List 93
+                !                        & + min(schshr(k),0.0)       !Canosa & List 93
 
                 !
                 !  snow
@@ -6523,20 +6107,20 @@ CONTAINS
                         & + max(scsacw(k),0.0)   &
                         & + max(scsacr(k),0.0)   &
                         & + max(-schacs(k),0.0)
-!                        & + max(-schlacs(k),0.0)  &
-!                        & + max(scsmlr(k),0.0)    &  !Drake
-!                        & + max(scsdep(k),0.0)    &  !Dong&Hallett
-!                        & - min(scsshr(k),0.0)       !Canosa & List 93
+                !                        & + max(-schlacs(k),0.0)  &
+                !                        & + max(scsmlr(k),0.0)    &  !Drake
+                !                        & + max(scsdep(k),0.0)    &  !Dong&Hallett
+                !                        & - min(scsshr(k),0.0)       !Canosa & List 93
                 pscswd(k) =  pscswd(k)   &
                         & + min(scsaci(k),0.0)   &
                         & + min(scsacw(k),0.0)   &
                         & + min(scsacr(k),0.0)   &
                         & + min(-schacs(k),0.0)
-!                        & + min(-schlacs(k),0.0)  &
-                        !     > + min(-scfacs(k),0.0)
-!                        & + min(scsmlr(k),0.0)    &   !Drake, but always 0.? (since scsmlr >= 0)
-!                        & + min(scsdep(k),0.0)    &   !Dong&Hallett
-!                        & - max(scsshr(k),0.0)        !Canosa & List 93
+                !                        & + min(-schlacs(k),0.0)  &
+                !     > + min(-scfacs(k),0.0)
+                !                        & + min(scsmlr(k),0.0)    &   !Drake, but always 0.? (since scsmlr >= 0)
+                !                        & + min(scsdep(k),0.0)    &   !Dong&Hallett
+                !                        & - max(scsshr(k),0.0)        !Canosa & List 93
 
                 !
                 !  graupel
@@ -6545,42 +6129,42 @@ CONTAINS
                         & + max(schaci(k),0.0)   &
                         & + max(schacs(k),0.0)   &
                         & + max(schacw(k),0.0)
-!                        & + max(schacr(k),0.0)   &
-!                        & + max(schmlr(k),0.0)   & !Drake
-!                        & - min(schshr(k),0.0)     !Canosa & List 93
+                !                        & + max(schacr(k),0.0)   &
+                !                        & + max(schmlr(k),0.0)   & !Drake
+                !                        & - min(schshr(k),0.0)     !Canosa & List 93
                 pschwd(k) =  pschwd(k)   &
                         & + min(schaci(k),0.0)   &
                         & + min(schacs(k),0.0)   &
                         & + min(schacw(k),0.0)
-!                        & + min(schacr(k),0.0)   &
-!                        & + min(schmlr(k),0.0)   & !Drake, but always 0.? (since schmlr >= 0)
-!                        & - max(schshr(k),0.0)     !Canosa & List 93
+                !                        & + min(schacr(k),0.0)   &
+                !                        & + min(schmlr(k),0.0)   & !Drake, but always 0.? (since schmlr >= 0)
+                !                        & - max(schshr(k),0.0)     !Canosa & List 93
 
-!                !  ions not changed as in micro suggested by Ted
-!                !
-!                pscnii(k) =  pscnii(k)  &
-!                        &               - min(fscrw(k),0.0)*min(qrcev(k),0.0)  &
-!                        &               - min(fscsw(k),0.0)*min(qscev(k),0.0)  &
-!                        &               + min(-schmlr(k),0.0)    &
-!                        &               + min(-scsmlr(k),0.0)
-!                pscpii(k) =  pscpii(k)  &
-!                        &               - max(fscrw(k),0.0)*min(qrcev(k),0.0)  &
-!                        &               - max(fscsw(k),0.0)*min(qscev(k),0.0)  &
-!                        &               + max(-schmlr(k),0.0)    &
-!                        &               + max(-scsmlr(k),0.0)
-!                pscnid(k) =  pscnid(k)  &
-!                        &               - max(-scsdep(k),0.0)
-!                pscpid(k) =  pscpid(k)  &
-!                        &               - min(-scsdep(k),0.0)
+                !                !  ions not changed as in micro suggested by Ted
+                !                !
+                !                pscnii(k) =  pscnii(k)  &
+                !                        &               - min(fscrw(k),0.0)*min(qrcev(k),0.0)  &
+                !                        &               - min(fscsw(k),0.0)*min(qscev(k),0.0)  &
+                !                        &               + min(-schmlr(k),0.0)    &
+                !                        &               + min(-scsmlr(k),0.0)
+                !                pscpii(k) =  pscpii(k)  &
+                !                        &               - max(fscrw(k),0.0)*min(qrcev(k),0.0)  &
+                !                        &               - max(fscsw(k),0.0)*min(qscev(k),0.0)  &
+                !                        &               + max(-schmlr(k),0.0)    &
+                !                        &               + max(-scsmlr(k),0.0)
+                !                pscnid(k) =  pscnid(k)  &
+                !                        &               - max(-scsdep(k),0.0)
+                !                pscpid(k) =  pscpid(k)  &
+                !                        &               - min(-scsdep(k),0.0)
 
             end if ! itest
 
 
 
 
-!            !
-!            ! EVERYTHING ELSE
-!            !
+            !            !
+            !            ! EVERYTHING ELSE
+            !            !
 
             scworig = scx(k,lc)
             ! update scx array (complete)
@@ -6594,18 +6178,6 @@ CONTAINS
                     &   dt*(pscswi(k)+pscswd(k)+pscswmi(k)+pscswmd(k)+pscs_sed(k))
             scx(k,lh) = scx(k,lh) +   &
                     &   dt*(pschwi(k)+pschwd(k)+pschwmi(k)+pschwmd(k)+pscg_sed(k))
-
-!            ! update scx array (test run w/o pscm)
-!            scx(k,lc) = scx(k,lc) +   &
-!                    &   dt*(psccwi(k)+psccwd(k)+pscc_sed(k))
-!            scx(k,li) = scx(k,li) +   &
-!                    &   dt*(psccii(k)+psccid(k)+psci_sed(k))
-!            scx(k,lr) = scx(k,lr) +   &
-!                    &   dt*(pscrwi(k)+pscrwd(k)+pscr_sed(k))
-!            scx(k,ls) = scx(k,ls) +   &
-!                    &   dt*(pscswi(k)+pscswd(k)+pscs_sed(k))
-!            scx(k,lh) = scx(k,lh) +   &
-!                    &   dt*(pschwi(k)+pschwd(k)+pscg_sed(k))
 
 
             cionp(k) = cionp(k) +  &
@@ -6622,137 +6194,39 @@ CONTAINS
             ! put scx arrays back into an array
             an1d(k,lscpi) = cionp(k)
             an1d(k,lscni) = cionn(k)
-!            if ( largeion ) then
-!                if ( clionp(k) .gt. clionpmx ) then
-!                    an1d(k,lscpli) = clionpmx
-!                    an1d(k,lscpi)  = an1d(k,lscpi) + ( clionp(k) - clionpmx )
-!                else
-!                    an1d(k,lscpli) = clionp(k)
-!                endif
-!                if ( clionn(k) .gt. clionnmx ) then
-!                    an1d(k,lscnli) = clionnmx
-!                    an1d(k,lscni)  = an1d(k,lscni) + ( clionn(k) - clionnmx )
-!                else
-!                    an1d(k,lscnli) = clionn(k)
-!                endif
-!            end if
+
 
             DO il = lc,lhab
                 tmp = an1d(k,lsc(il))
                 an1d(k,lsc(il)) = scx(k,il)
                 IF (.not.( Abs (scx(k,il) ) < 1000000.e-9  )) THEN
-                                        write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(k,il),an1d(k,il),an1d(k,ln(il))
-                                        write(0,*) 'Problem2 with scx il = ',il,scx(k,il),tmp,k,tmp-scx(k,il),(tmp-scx(k,il))*dtpinv
-                                        write(0,*) 'temper = ',T3D(k)
-                                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                                        write(0,*) 'qx,cx = ',an1d(k,il),an1d(k,ln(il))
-                                        write(0,*)  psccwi(k), psccwd(k)
-                                        write(0,*)  psccii(k), psccid(k)
-                                        write(0,*)  pscrwi(k), pscrwd(k)
-                                        write(0,*)  pscswi(k), pscswd(k)
-                                        write(0,*)  pschwi(k), pschwd(k)
-!                                        write(0,*)  pschli(k), pschld(k)
-                                        write(0,*)  pscpii(k) ,pscpid(k)
-                                        write(0,*)  pscnii(k) ,pscnid(k)
-                                        write(0,*)
-                                        write(0,*)  psccwmi(k), psccwmd(k)
-                                        write(0,*)  psccimi(k), psccimd(k)
-                                        write(0,*)  pscrwmi(k), pscrwmd(k)
-                                        write(0,*)  pscswmi(k), pscswmd(k)
-                                        write(0,*)  pschwmi(k), pschwmd(k)
-!                                        write(0,*)  pschlmi(k), pschlmd(k)
-                                        write(0,*)
-                                        write(0,*)  pscc_sed(k)
-                                        write(0,*)  psci_sed(k)
-                                        write(0,*)  pscr_sed(k)
-                                        write(0,*)  pscs_sed(k)
-                                        write(0,*)  pscg_sed(k)
+                    write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(k,il),an1d(k,il),an1d(k,ln(il))
+                    write(0,*) 'Problem2 with scx il = ',il,scx(k,il),tmp,k,tmp-scx(k,il),(tmp-scx(k,il))*dtpinv
+                    write(0,*) 'temper = ',T3D(k)
+                    write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                    write(0,*) 'qx,cx = ',an1d(k,il),an1d(k,ln(il))
+                    write(0,*)  psccwi(k), psccwd(k)
+                    write(0,*)  psccii(k), psccid(k)
+                    write(0,*)  pscrwi(k), pscrwd(k)
+                    write(0,*)  pscswi(k), pscswd(k)
+                    write(0,*)  pschwi(k), pschwd(k)
+                    !                                        write(0,*)  pschli(k), pschld(k)
+                    write(0,*)  pscpii(k) ,pscpid(k)
+                    write(0,*)  pscnii(k) ,pscnid(k)
+                    write(0,*)
+                    write(0,*)  psccwmi(k), psccwmd(k)
+                    write(0,*)  psccimi(k), psccimd(k)
+                    write(0,*)  pscrwmi(k), pscrwmd(k)
+                    write(0,*)  pscswmi(k), pscswmd(k)
+                    write(0,*)  pschwmi(k), pschwmd(k)
+                    !                                        write(0,*)  pschlmi(k), pschlmd(k)
+                    write(0,*)
+                    write(0,*)  pscc_sed(k)
+                    write(0,*)  psci_sed(k)
+                    write(0,*)  pscr_sed(k)
+                    write(0,*)  pscs_sed(k)
+                    write(0,*)  pscg_sed(k)
 
-                                        if(psccwmd(k).ne.0) then
-                                            write(0,*) '********* psccwmd debug*******************'
-                                            write(0,*) 'psccwmd.ne.0', pscr_sed(k)
-                                            write(0,*) 'i,j,k,t=', i,j,k,itimestep
-                                            write(0,*) 'fsccw(k)=',fsccw(k)
-                                            write(0,*) 'PRA(k),PRC(k)=', PRA(k),PRC(k)
-                                            write(0,*) 'il5(k)=', il5(k)
-                                            write(0,*) 'PSACWI(k),mnuccc(k),PGSACW(k)=', PSACWI(k),mnuccc(k),PGSACW(k)
-                                            WRITE(0,*) 'qmults(k),qmultg(k),PSACWS(k),PSACWG(k)',qmults(k),qmultg(k),PSACWS(k),PSACWG(k)
-                                            write(0,*) 'pcc(k)',pcc(k)
-                                            write(0,*) '********* end psccwmd debug***************'
-                                        end if
-!                                        if(pscr_sed(k).ne.0) then
-!                                            write(0,*) '********* psc debug*******************'
-!                                            write(0,*) 'pscr_sed.ne.0', pscr_sed(k)
-!                                            write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!                                            write(0,*) 'faloutscr(k+1),(k)=',faloutscr(k+1),faloutscr(k)
-!                                            write(0,*) 'dzq(k), NSTEP=', dzq(k), NSTEP
-!                                            write(0,*) 'FR(k+1), FR(k)=', FR(k+1), FR(k)
-!                                            write(0,*) 'tmpscr(k+1),(k)=', tmpscr(k+1),tmpscr(k)
-!                                            write(0,*) '********* end psc debug***************'
-!                                        end if
-!
-!                                        if (Abs (scx(k,il) ) > 1e-2) then
-!                                            write (0,*) 'scx>1e-2 at ijkl='
-!                                            write (0,*) i,j,k,itimestep, il
-!                                            write (0,*) 'scx(k,il)=', scx(k,il)
-!!                                            write (0,*) 'stopping'
-!!                                            print*, 'stopping'
-!!                                            STOP
-!                                        end if
-!                                        if(pscrwmd(k).ne.0.) then
-!                                            write(0,*)  'for pscrwmd(k)=', pscrwmd(k)
-!                                            write(0,*)  '-fscrw(k)*PIACR(k)', -fscrw(k)*PIACR(k)
-!                                            write(0,*)  '-fscrw(k)*MNUCCR(k)', -fscrw(k)*MNUCCR(k)
-!                                            write(0,*)  '-fscrw(k)=', -fscrw(k)
-!                                            write(0,*)  'scx(k,lr)=', tmp1, 'an1d(k,lr)=', an1d(k,lr)
-!                                            write(0,*)  'MNUCCR(k)=', MNUCCR(k)
-!                                            write(0,*)  '-fscrw(k)*qmultr(k)', -fscrw(k)*qmultr(k)
-!                                            write(0,*)  '-fscrw(k)*qmultrg(k)', -fscrw(k)*qmultrg(k)
-!                                            write(0,*)  '-fscrw(k)*PIACRS(k)', -fscrw(k)*PIACRS(k)
-!                                            write(0,*)  '-fscrw(k)*PGRACS(k)', -fscrw(k)*PGRACS(k)
-!                                            write(0,*)  'il5(k)', il5(k)
-!                                            write(0,*)  '-fscrw(k)*PRACS(k)', -fscrw(k)*PRACS(k)
-!                                            write(0,*)  '-fscrw(k)*PRACG(k)', -fscrw(k)*PRACG(k)
-!                                            write(0,*)  'fscrw(k)*min(0.0,pre(k))', fscrw(k)*min(0.0,pre(k))
-!                                        end if
-
-
-!                    pscrwmd(k) =     fscrw(k)*(&
-!                            &  il5(k)*(-PIACR(k) & ! PIACR: equate to qiacr, rw collected by ci to produce gw, rw->gw
-!                                    &  -MNUCCR(k) & ! MNUCCR: equate to qrfrz, rw frozen into gw, rw->gw
-!                                    &  -qmultr(k)-qmultrg(k) & ! h-m ice multip. on sw & gw, rw->ci
-!                                    &  -PIACRS(k) & ! PIACRS: equate to qracis, rw collected by ci to produce sw, rw->sw
-!                                    &  -PGRACS(k) & ! PGRACS: rw collected by sw to produce gw, rw->gw
-!                                    ) &
-!                                    &  -PRACS(k) & ! PRACS: equate to qsacr, rw collected by sw, rw->sw
-!                                    &  -PRACG(k) & ! PRACG: equate to qhacr, rw collected by gw, rw->gw
-!                                    !                        &  -qhlacr(k)  & ! hail not used
-!                                    &  +min(0.0,pre(k)) & ! pre: equate to qrcev, evap of rw, negative only, rw->qv
-!                            )
-!                                        write(0,*)
-!                                        write(0,*)  'for pschwmi(k)=', pschwmi(k)
-!                                        write(0,*)  'fscci(k)*PRACI(k)', fscci(k)*PRACI(k)
-!                                        write(0,*)  'fscrw(k)*PIACR(k)', fscrw(k)*PIACR(k)
-!                                        write(0,*)  'fscrw(k)*MNUCCR(k)', fscrw(k)*MNUCCR(k)
-!                                        write(0,*)  'fsccw(k)*PGSACW(k)', fsccw(k)*PGSACW(k)
-!                                        write(0,*)  'fsccw(k)*PSACWG(k)', fsccw(k)*PSACWG(k)
-!                                        write(0,*)  'fscrw(k)*PGRACS(k)', fscrw(k)*PGRACS(k)
-!                                        write(0,*)  'fscsw(k)*PSACR(k)', fscsw(k)*PSACR(k)
-!                                        write(0,*)  'il5(k)', il5(k)
-!                                        write(0,*)  'fscrw(k)*PRACG(k)', fscrw(k)*PRACG(k)
-
-!                    pschwmi(k) =    il5(k)*(fscci(k)*PRACI(k) & ! PRACI: equate to qracif, ci collide w/ rw to produce gw, ci->gw
-!                            &  +fscrw(k)*PIACR(k) & ! PIACR: equate to qiacrf, rw collide w/ ci to produce gw, rw->gw
-!                            &  +fscrw(k)*MNUCCR(k) & ! MNUCCR: equate to qrfrz, rw frozen into gw, rw->gw
-!                            &  +fsccw(k)*PGSACW(k) & ! PGSACW: cw collected by sw to produce gw, cw->gw
-!                            &  +fsccw(k)*PSACWG(k) & ! PSACWG: equate to qhacw, cw collected by gw, cw->gw
-!                            &  +fscrw(k)*PGRACS(k) & ! PGRACS: rw collected by sw to produce gw, rw->gw
-!                            &  +fscsw(k)*PSACR(k) & ! PSACR: sw collected by rw to produce gw, sw->gw
-!                            ) &
-!                            &  +fscrw(k)*PRACG(k)  ! PRACG: equate to qhacr, rw collected by gw, rw->gw
-!                    !                        &  +fscsw(k)*qhacs(k) & ! sw collected by gw, not included in morr
-!                    !                        &  +fscci(k)*qhaci(k) & ! sw collected by ci, not included in morr
-!                    STOP
                 ENDIF
             ENDDO
             do iltest=lc,lh
@@ -6780,10 +6254,6 @@ CONTAINS
             ! To be consistent with same thing done earlier fro q and n
             IF (QI3D(K).GE.QSMALL.AND.T3D(K).LT.273.15.AND.LAMI(K).GE.1.E-10) THEN
                 IF (1./LAMI(K).GE.2.*DCS) THEN
-!                    QNI3DTEN(K) = QNI3DTEN(K)+QI3D(K)/DT+ QI3DTEN(K)
-!                    NS3DTEN(K) = NS3DTEN(K)+NI3D(K)/DT+   NI3DTEN(K)
-!                    QI3DTEN(K) = -QI3D(K)/DT
-!                    NI3DTEN(K) = -NI3D(K)/DT
                     an1d(k,lsc(ls)) = an1d(k,lsc(ls)) + an1d(k,lsc(li))
                     an1d(k,lsc(li)) = 0.0
                 END IF
@@ -6792,53 +6262,14 @@ CONTAINS
             !
             ! Load the save arrays
             !
-!            t1(k) = scsaci(k)
+            !            t1(k) = scsaci(k)
             t2(k) = schacs(k)
             t3(k) = schaci(k)
-!            t4(k) = scsacw(k)
+            !            t4(k) = scsacw(k)
             t5(k) = schacw(k)
             t6(k) = schlacs(k) ! =0
             t8(k) = schlaci(k) ! =0
 
-
-!            if (i==21 .and. j==56 .and. k==27 .and. itimestep.ge.363) then
-!                write(0,*) 'after psc, an1d(k,lscw)=', an1d(k,lscw)
-!                write(0,*) 't5(k)=', t5(k)
-!                write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!!                psccwmd(k) =    fsccw(k)*(&
-!!                        &  -PRA(k) & ! PRA: equate to qracw, cw collected by rw, cw->rw
-!!                                &  -PRC(k) & ! PRC: equate to qrcnw, cw autoconvert to rw, cw->rw
-!!                                &  +il5(k)*(-PSACWI(k)   & ! PSACWI: equate to qiacw: collection of cw by ci
-!!                                        &  -mnuccc(k)    & ! mnuccc: equate to qwctfzc, here includs contact and immersion frz
-!!                                        &  -PGSACW(k)  & ! PGSACW: cw collected by sw to produce gw, cw->gw
-!!                                        &  -qmults(k)-qmultg(k) & ! h-m ice multip. on sw & gw, cw->ci
-!!                                        &  -PSACWS(k)  & ! PSACWS: equate to qsacw, cw collected by sw, after deducted by PGSACW and QMULTS, cw->sw
-!!                                        &  -PSACWG(k)  & ! PSACWG: equate to qhacw, cw collected by gw, after deducted by QMULTG, cw->gw
-!!                                        !                                 &  -qwfrz(k)    & ! homo freezing: done later
-!!                                        ) &
-!!                        !                        &  -qiihr(k)  & ! qiihr: Hobbs-Rangno ice enhancement, not used in nssl either
-!!                        !                        &  -qhlacw(k) & ! hail not used
-!!                        )
-!                write(0,*) 'scworig', scworig
-!                write(0,*) 'psccwi(k)=',psccwi(k)
-!                write(0,*) 'psccwd(k)=',psccwd(k)
-!                write(0,*) 'psccwmi(k)=',psccwmi(k)
-!                write(0,*) 'psccwmd(k)=',psccwmd(k)
-!                write(0,*) 'pscc_sed(k)=',pscc_sed(k)
-!                write(0,*) 'scx(k,lc)', scx(k,lc)
-!                write(0,*) 'schacw(k)', schacw(k)
-!                write(0,*) 'scsacw(k)', scsacw(k)
-!                write(0,*) 'fsccw(k)', fsccw(k)
-!                write(0,*) 'an1d(k,lc)', an1d(k,lc)
-!                write(0,*) 'PRA(k)', PRA(k)
-!                write(0,*) 'PRC(k)', PRC(k)
-!                write(0,*) 'il5(k)', il5(k)
-!                write(0,*) 'PSACWI(k)', PSACWI(k)
-!                write(0,*) 'mnuccc(k)', mnuccc(k)
-!                write(0,*) 'PGSACW(k)', PGSACW(k)
-!                write(0,*) 'qmults(k), qmultg(k', qmults(k), qmultg(k)
-!                write(0,*) 'psacws(k), psacwg(k)', psacws(k), psacwg(k)
-!            end if
 
         else
             scx(k,lsc(lc):lsc(lhab)) = 0.0
@@ -6872,40 +6303,6 @@ CONTAINS
         NS3D(k)        = NS3D(k)+NS3DTEN(k)*DT
         NR3D(k)        = NR3D(k)+NR3DTEN(k)*DT
 
-!        debug: negative qr?
-        if (QR3D(k).lt.0.0 .and. ipelec>0) then
-            write(0,*) '-------------------------------------------'
-            write(0,*) 'i,j,k,t', i,j,k,itimestep
-            write(0,*) 'T3D(K)',T3D(K)
-            write(0,*) 'QR3D(k).lt.0.0, ', QR3D(k)
-            write(0,*) 'QR3D(k+1)=', QR3D(k+1)
-            write(0,*) 'an1d(k,lr)',an1d(k,lr)
-            write(0,*) 'an1d(k+1,lr)',an1d(k+1,lr)
-            write(0,*) 'QR3DTEN(k)*DT', QR3DTEN(k)*DT, QR3DTEN(k),DT
-            if (QR3DTEN(k).ne.PRE(k).and.QR3DTEN(k).ne.QRSTEN(k)) then
-                write(0,*) 'not just pre'
-                write(0,*) 'QR3DTEN(k)=(PRE(K)+PRA(K)+PRC(K)-PRACS(K)-MNUCCR(K)-QMULTR(K)-QMULTRG(K) &
-                        -PIACR(K)-PIACRS(K)-PRACG(K)-PGRACS(K))+QRSTEN(K)'
-                write(0,*) 'PRE(K),PRA(K),PRC(K)',PRE(K),PRA(K),PRC(K)
-                write(0,*) '-PRACS(K)',-PRACS(K)
-                write(0,*) '-MNUCCR(K)',-MNUCCR(K)
-                write(0,*) '-QMULTR(K), -QMULTRG(K)',-QMULTR(K), -QMULTRG(K)
-                write(0,*) '-PIACR(K),-PIACRS(K)', -PIACR(K), -PIACRS(K)
-                write(0,*) '-PRACG(K)', -PRACG(K)
-                write(0,*) '-PGRACS(K)',-PGRACS(K)
-                write(0,*) 'QRSTEN(K)', QRSTEN(K)
-                write(0,*) 'an1d(k,lc)', an1d(k,lc)
-                write(0,*) 'an1d(k,ls)', an1d(k,ls)
-                write(0,*) 'an1d(K,lh)', an1d(K,lh)
-                write(0,*) 'an1d(K,lh)', an1d(K,lh)
-            else
-                write(0,*) 'just pre or sten'
-            end if
-            write(0,*) '-------------------------------------------'
-!            write(0,*) 'stopping'
-!            print*, 'stopping'
-!            stop
-        end if
 
         IF (IGRAUP.EQ.0) THEN
             QG3D(k)        = QG3D(k)+QG3DTEN(k)*DT
@@ -6916,6 +6313,19 @@ CONTAINS
         T3D(K)         = T3D(K)+T3DTEN(k)*DT
         QV3D(K)        = QV3D(K)+QV3DTEN(k)*DT
 
+        ! yc added 2/24/2022
+        ! get rid of artificial neg q/n, prevent adding to qv
+        !        qc3d(k) = max(qc3d(k),0.0)
+        !        qi3d(k) = max(qi3d(k),0.0)
+        !        qni3d(k) = max(qni3d(k),0.0)
+        !        qr3d(k) = max(qr3d(k),0.0)
+        !        nc3d(k) = max(nc3d(k),0.0)
+        !        ni3d(k) = max(ni3d(k),0.0)
+        !        ns3d(k) = max(ns3d(k),0.0)
+        !        nr3d(k) = max(nr3d(k),0.0)
+        !        qg3d(k) = max(qg3d(k),0.0)
+        !        ng3d(k) = max(ng3d(k),0.0)
+        !        qv3d(k) = max(qv3d(k),0.0)
         ! SATURATION VAPOR PRESSURE AND MIXING RATIO
 
         ! hm, add fix for low pressure, 5/12/10
@@ -6943,7 +6353,7 @@ CONTAINS
                     write(0,*) 'i,j,k,t', i,j,k,itimestep
                     write(0,*) 'qr3d(k)',qr3d(k)
                     write(0,*) 'an1d(k,lscr)', an1d(k,lscr)
-!                    write(0,*)
+                    !                    write(0,*)
                 end if
                 QV3D(K)=QV3D(K)+QR3D(K)
                 T3D(K)=T3D(K)-QR3D(K)*XXLV(K)/CPM(K)
@@ -7003,11 +6413,6 @@ CONTAINS
                 an1d(k,lsch) = 0.0
             END IF
         END IF
-!        if (i==21 .and. j==56 .and. k==27 .and. ipelec>0&
-!                .and. itimestep.ge.363) then
-!            write(0,*) 'after subsat remove, an1d(k,lscw)=', an1d(k,lscw)
-!            write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!        end if
 
         !..................................................................
         ! IF MIXING RATIO < QSMALL SET MIXING RATIO AND NUMBER CONC TO ZERO
@@ -7019,13 +6424,6 @@ CONTAINS
             an1d(k,lscw) = 0.0
         END IF
         IF (QR3D(K).LT.QSMALL) THEN
-!            if(ipelec>0) then
-!                write(0,*) '-------------------------------------------'
-!                write(0,*) 'zeroing out qr:'
-!                write(0,*) 'i,j,k,t', i,j,k,itimestep
-!                write(0,*) 'qr3d(k)',qr3d(k)
-!                write(0,*) 'an1d(k,lscr)', an1d(k,lscr)
-!            end if
             QR3D(K) = 0.
             NR3D(K) = 0.
             EFFR(K) = 0.
@@ -7049,11 +6447,6 @@ CONTAINS
             EFFG(K) = 0.
             an1d(k,lsch) = 0.0
         END IF
-!        if (i==21 .and. j==56 .and. k==27 .and. ipelec>0&
-!                .and. itimestep.ge.363) then
-!            write(0,*) 'after <qsmall remove, an1d(k,lscw)=', an1d(k,lscw)
-!            write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!        end if
 
         !..................................
         ! IF THERE IS NO CLOUD/PRECIP WATER, THEN SKIP CALCULATIONS
@@ -7121,11 +6514,6 @@ CONTAINS
             END IF
 
         END IF
-!        if (i==21 .and. j==56 .and. k==27 .and. ipelec>0&
-!                .and. itimestep.ge.363) then
-!            write(0,*) 'after instant proc, an1d(k,lscw)=', an1d(k,lscw)
-!            write(0,*) 'i,j,k,t=', i,j,k,itimestep
-!        end if
 
         778    CONTINUE
 
@@ -7225,7 +6613,7 @@ CONTAINS
                         LOG(GAMMA(PGAM(K)+1.))-LOG(GAMMA(PGAM(K)+4.)))/CONS26
 
             END IF
-!                xdia(k,lc) = 1.0/LAMC(K)
+            !                xdia(k,lc) = 1.0/LAMC(K)
             xdia(k,lc) = (PGAM(K)+1.)/LAMC(K)
 
         END IF
@@ -7343,7 +6731,7 @@ CONTAINS
 
     IF (IPELEC>0) THEN
         !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-        ! update an1d "q and n" part
+        ! update an1d "q and n" part for use in SCIONA later
         an1d(kts:kte,lc) = qc3d(kts:kte)
         an1d(kts:kte,lr) = qr3d(kts:kte)
         an1d(kts:kte,li) = qi3d(kts:kte)
@@ -7958,6 +7346,8 @@ CONTAINS
 
     !+---+-----------------------------------------------------------------+
 
+    !    -----------------------------------------------------------------------!
+    !    ------------------------  Explicit Lightning  -------------------------!
     Function delbk(bb,nu,mu,k)
         !
         !  Purpose: Caluculates collection coefficients following Siefert (2006)
@@ -10564,17 +9954,6 @@ CONTAINS
         end if
 
         ftelwc = fac*ftelwc
-        !
-        !     print*,'qsign',qsign
-        !     print*,'ftelwc',ftelwc
-        !     print*,'qconkq',qconkq
-        !     print*,'qconm',qconm
-        !     print*,'qconn',qconn
-        !     print*,'idelq',idelq
-        !     print*,'awdia',awdia
-        !     print*,'temcg',temcg
-        !     print*,'qcw',qcw
-        !
         return
     end subroutine saund
     ! ####################################################################
@@ -10589,9 +9968,9 @@ CONTAINS
             &  ,nor,norz &
             &  ,dtp,dz3d &
             &  ,an &
-!            &  ,dn,p2 &
-!            &  ,pn,w &
-!            &  ,tmp3d &
+            !            &  ,dn,p2 &
+            !            &  ,pn,w &
+            !            &  ,tmp3d &
             &  )
 
         implicit none
@@ -10606,20 +9985,9 @@ CONTAINS
         ! external temporary arrays
         !
 
-!        real p2(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)  ! perturbation Pi
-!        real pn(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
         real an(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz,na)
-!        real dn(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
-
-!        real w(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
-        !      real qv(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
-
 
         real dz3d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
-
-!        real tmp3d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
-
-        !      real scion2(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz,2)
 
         ! local
 
@@ -10635,12 +10003,12 @@ CONTAINS
         double precision dv, deninv, tmp, tmpion
 
         ! density defined in nssl
-!        real    :: rhos = 100.
-!        real    :: rhog = 500. ! not correct, but for now
-!        real    :: rhoh = 900.
-!        real    :: rhor = 1000.
-!        real    :: rhoi = 900.
-!        real    :: rhow = 1000.
+        !        real    :: rhos = 100.
+        !        real    :: rhog = 500. ! not correct, but for now
+        !        real    :: rhoh = 900.
+        !        real    :: rhor = 1000.
+        !        real    :: rhoi = 900.
+        !        real    :: rhow = 1000.
         ! density defined in morr
         real    :: rhos = 100.
         real    :: rhog = 400.
@@ -10672,9 +10040,9 @@ CONTAINS
                         if (an(ix,jy,kz,li) > qxmin(li)) fraci=((an(ix,jy,kz,li)/rhoi)**(2./3.) ) * Max(an(ix,jy,kz,lni), 0.0)**(1./3.)
                         if (an(ix,jy,kz,ls) > qxmin(ls)) fracs=((an(ix,jy,kz,ls)/rhos)**(2./3.) ) * Max(an(ix,jy,kz,lns), 0.0)**(1./3.)
                         if (an(ix,jy,kz,lh) > qxmin(lh)) frach=((an(ix,jy,kz,lh)/rhog)**(2./3.) ) * Max(an(ix,jy,kz,lnh), 0.0)**(1./3.)
-!                        IF ( lhl > 1 ) THEN
-!                            if (an(ix,jy,kz,lhl) > qxmin(lhl)) frachl=((an(ix,jy,kz,lhl)/rhoh)**(2./3.) ) * Max(an(ix,jy,kz,lnhl), 0.0)**(1./3.)
-!                        ENDIF
+                        !                        IF ( lhl > 1 ) THEN
+                        !                            if (an(ix,jy,kz,lhl) > qxmin(lhl)) frachl=((an(ix,jy,kz,lhl)/rhoh)**(2./3.) ) * Max(an(ix,jy,kz,lnhl), 0.0)**(1./3.)
+                        !                        ENDIF
 
 
                         fractot = fracw + fracr + fraci + fracs + frach + frachl
@@ -10702,9 +10070,9 @@ CONTAINS
                                 an(ix,jy,kz,lsch) = an(ix,jy,kz,lsch) + tmpion*(frach/fractot)
                             ENDIF
 
-!                            IF (lnhl > 1 .and. frachl > 0 ) then
-!                                an(ix,jy,kz,lschl) = an(ix,jy,kz,lschl) + tmpion*(frachl/fractot)
-!                            ENDIF
+                            !                            IF (lnhl > 1 .and. frachl > 0 ) then
+                            !                                an(ix,jy,kz,lschl) = an(ix,jy,kz,lschl) + tmpion*(frachl/fractot)
+                            !                            ENDIF
 
 
                             an(ix,jy,kz,lscpi) = 0.0
@@ -10740,6 +10108,9 @@ CONTAINS
     END SUBROUTINE SCIONATT
 
     ! ##############################################################################
+
+    !    -----------------------------------------------------------------------!
+    !    ----------------------  End Explicit Lightning  -----------------------!
 END MODULE module_mp_morr_two_moment
 !+---+-----------------------------------------------------------------+
 !+---+-----------------------------------------------------------------+
