@@ -3756,7 +3756,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
    
    IF ( present( nssl_cccn ) ) THEN
      SELECT CASE(config_flags%mp_physics)
-     CASE (NSSL_2MOM,NSSL_2MOMCCN,MORR_TWO_MOMENT)
+     CASE (NSSL_2MOM,NSSL_2MOMCCN,MORR_TWO_MOMENT,AHM)
        IF ( config_flags%elec_physics > 0 ) THEN
          nssl_ipelec_tmp = Max(1,nssl_ipelec)
        ELSE
@@ -3842,7 +3842,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
      CASE (SULIAHARRINGTON)
          CALL suliaharrington_init
      CASE (AHM)
-         CALL ahm_init
+         CALL ahm_init(nssl_params)
      CASE (P3_1CATEGORY)
          CALL p3_init('./p3_lookup_table_1.dat','./p3_lookup_table_2.dat',1)
      CASE (P3_1CATEGORY_NC)
