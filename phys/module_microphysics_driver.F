@@ -1682,6 +1682,15 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
                  ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
+!!                ------------------------------ explicite lightning ------------------------------
+!!                ---------------------------------------------------------------------------------
+                                      ,SCR=scr                            &
+                                      ,SCW=scw                            & !
+                                      ,SCI=sci                            & !
+                                      ,SCS=scs                            & !
+                                      ,SCH=sch                            & !
+!!                ------------------------------ end lightning ------------------------------------
+!!                ---------------------------------------------------------------------------------
                                                                )
 
         ELSE
