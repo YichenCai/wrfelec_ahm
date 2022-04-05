@@ -100,7 +100,13 @@
       REAL, PRIVATE :: acoll(20,27), ancoll(20,27), cncoll(20,27), ddcoll(20,27)
       INTEGER, PRIVATE :: ii, jj, kk, ll, mm, nn, oo, iii, jjj, kkk, lll, mmm, nnn, ooo
 
-
+      !---------------------------------------------------------------------------
+      !Explicit lightning public vars (add with caution)--------------------------
+      integer :: ipelec = 0
+      integer :: isaund = 0
+      logical :: idonic = .false.
+      !---------------------------------------------------------------------------
+      !End explicit lightning ----------------------------------------------------
 CONTAINS
 !*************************************************************************************
 !     THIS SUBROUTINE INITIALIZES ALL PHYSICAL CONSTANTS AMND PARAMETERS 
@@ -119,6 +125,16 @@ CONTAINS
       integer :: igam
       double precision :: arg
       integer :: j
+
+      ipelec   = Nint(nssl_params(11))
+      isaund   = Nint(nssl_params(12))
+      IF ( present(idonictmp) ) THEN
+          idonic = idonictmp
+      ENDIF
+
+      IF ( ipelec > 0 .or. idonic ) THEN
+          print*, 'ipelec, isaund, idonic=',ipelec, isaund, idonic
+      ENDIF
       !---------------------------------------------------------------------------
       !End explicit lightning --------------------------------------------------------
 
@@ -399,14 +415,16 @@ CONTAINS
       
       REAL :: start, finish
 
-!      !                ------------------------------ explicite lightning ------------------------------
-!      !                ---------------------------------------------------------------------------------
+!                ------------------------------ explicite lightning ------------------------------
+!                ---------------------------------------------------------------------------------
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
               scr,scw,sci,scs,sch
-!      real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
-!              scr
-!      !                ------------------------------ end lightning ------------------------------------
-!      !                ---------------------------------------------------------------------------------
+
+      IF ( present(scw) .and. ipelec > 0 ) THEN
+          scr = itimestep
+      END IF
+!                ------------------------------ end lightning ------------------------------------
+!                ---------------------------------------------------------------------------------
 
       ihr = 1
       IF(PIRE_CHEM)THEN
