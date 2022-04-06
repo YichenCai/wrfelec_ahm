@@ -1,5 +1,6 @@
        IF ( (mp_physics == NSSL_2MOM .or. mp_physics == NSSL_2MOMCCN &
                .or. mp_physics==MORR_TWO_MOMENT &
+               .or. mp_physics==AHM &
                ) .and. elec_physics > 0 ) THEN
 
      if (ipelectmp.gt.0)  then ! 
