@@ -1590,6 +1590,103 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          end do
 
 
+         IF ( elec_physics == 0 ) THEN
+             CALL mp_ahm(                       &
+             id,                                 &
+             ITIMESTEP=itimestep,                &  !*
+             TH=th,                              &  !*
+             QV=qv_curr,                         &  !*
+             QC=qc_curr,                         &  !*
+             QR=qr_curr,                         &
+             QI=qi_curr,                         &  !*
+             QS=qs_curr,                         &
+             QG=qg_curr,                         &
+             NC=qnc_curr,                        &
+             NR=qnr_curr,                        &
+             NI=qni_curr,                        &  !*
+             NS=qns_curr,                        &
+             NG=qng_curr,                        &
+             AI=aice_curr,                       &
+             CI=cice_curr,                       &
+             AS=asnow_curr,                       &
+             CS=csnow_curr,                       &
+             RHO=rho,                            &  !*
+             PII=pi_phy,                         &  !*
+             P=p,                                &  !*
+             DT=dt,                              &  !*
+             DZ=dz8w,                            &  !* !hm
+             HT=ht,                              &  !*
+             W=w,                                &  !*
+             ICEDEP=icedep,                      &
+             ICESUB=icesub,                      &
+             RAINEVAP=rainevap,                  &
+             SNOWEVAP=snowevap,                  &
+             SNOWMELT=snowmelt,                  &
+             SNOWDEP=snowdep,                    &
+             SNOWSUB=snowsub,                    &
+             SNOWACCR=snowaccr,                  &
+             CLOUDCOND=cloudcond,                &
+             CLOUDEVAP=cloudevap,                &
+             ICEMELT=icemelt,                    &
+             ICENUC=icenuc,                      &
+             RAINFRZ=rainfrz,                    &
+             CLOUDFRZ=cloudfrz,                  &
+             SEDR=sedr,                        &
+             SEDI=sedi,                        &
+             SEDS=seds,                        &
+             SEDG=sedg,                        &
+             NAGGOUT=naggout,                     &
+             NRAGGOUT=nraggout,                   &
+             NSAGGOUT=nsaggout,                   &
+             PRAOUT=praout,                       &
+             CONTACT=contact,                     &
+             PRCOUT=prcout,                       &
+             DEP=dep,                             &
+             PRCIOUT=prciout,                     &
+             PSACWSOUT=psacwsout,                 &
+             QMULTSOUT=qmultsout,                 &
+             QMULTROUT=qmultrout,                 &
+             PIACROUT=piacrout,                   &
+             PRACIOUT=praciout,                   &
+             PIACRSOUT=piacrsout,                 &
+             PRACISOUT=pracisout,                 &
+             PRACGOUT=pracgout,                   &
+             PSACWGOUT=psacwgout,                 &
+             PGSACWOUT=pgsacwout,                 &
+             PGRACSOUT=pgracsout,                 &
+             PRDGOUT=prdgout,                     &
+             EPRDGOUT=eprdgout,                   &
+             EVPMGOUT=evpmgout,                   &
+             PGMLTOUT=pgmltout,                   &
+             QMULTGOUT=qmultgout,                 &
+             QMULTRGOUT=qmultrgout,               &
+             IMMERSION=immersion,                 &
+             PRAIOUT = praiout,                   &
+             CFRZR = cfrzr,                       &
+             RAINACC = rainacc,                  &
+             RAINACCT = rainacct,                &
+             SNOWACC = snowacc,                  &
+             SNOWACCT = snowacct,                &
+             GRAUPELACC = graupelacc,            &
+             GRAUPELACCT = graupelacct,          &
+             FRZNACC = frznacc,                  &
+             FRZNACCT = frznacct,                &
+             QAGG = qagg,                        &
+             QNAGG = qnagg,                      &
+             CPLX = cplx,                        &
+             PHIS = phis,                        &
+             RHOS = rhos,                        &
+             CPLXS = cplxs,                      &
+             PHI=phi,                            &
+             RHOICE=rhoice,                      &
+             RELH=relh                           &
+             ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
+             ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
+             ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
+                     )
+
+         ELSEIF ( elec_physics > 0 .and. f_scw ) THEN
+#if ( WRF_ELEC >= 1 )
           CALL mp_ahm(                       &
                      id,                                 &
                      ITIMESTEP=itimestep,                &  !*
@@ -1692,7 +1789,10 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
 !!                ------------------------------ end lightning ------------------------------------
 !!                ---------------------------------------------------------------------------------
                                                                )
-
+#else
+        Call wrf_error_fatal( 'for elec_physics > 0, need to rebuild WRF with -DWRF_ELEC')
+#endif
+                  END IF
         ELSE
            Call wrf_error_fatal( 'arguments not present for calling ahm')
         ENDIF
