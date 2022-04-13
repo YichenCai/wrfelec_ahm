@@ -472,6 +472,7 @@ CONTAINS
             close(90)
         END IF
 
+        write(0,*) "init finished, iplelc=", ipelec
         !---------------------------------------------------------------------------
         !End Explicit lightning ----------------------------------------------------
 
@@ -1152,7 +1153,6 @@ CONTAINS
         !-----------------------------------------------------------------------
         !End Explicit lightning ------------------------------------------------
 
-
         ! below for wrf-chem
         flag_qndrop = .false.
         IF ( PRESENT ( f_qndrop ) ) flag_qndrop = f_qndrop
@@ -1178,90 +1178,92 @@ CONTAINS
                 END DO
             END DO
         END DO
-
         !-----------------------------------------------------------------------
         !Explicit lightning ----------------------------------------------------Init vars
-        chgiona1 = 0.0d0
-        chgiona2 = 0.0d0
-        chgiona3 = 0.0d0
-        chgneg1 = 0.0
-        chgpos1 = 0.0
-        chgneg2 = 0.0
-        chgpos2 = 0.0
-        chgneg3 = 0.0
-        chgpos3 = 0.0
-        sctot3  = 0.0d0
-        scwtot  = 0.0d0
-        scrtot  = 0.0d0
-        scitot  = 0.0d0
-        scstot  = 0.0d0
-        schtot  = 0.0d0
-        schltot  = 0.0d0
-
-        scwmax  = 0.0d0
-        scrmax  = 0.0d0
-        scimax  = 0.0d0
-        scsmax  = 0.0d0
-        schmax  = 0.0d0
-        schlmax  = 0.0d0
-
-        scwmin  = 0.0d0
-        scrmin  = 0.0d0
-        scimin  = 0.0d0
-        scsmin  = 0.0d0
-        schmin  = 0.0d0
-        schlmin  = 0.0d0
-
-        t2_1d(:) = 0.0
-        t3_1d(:) = 0.0
-        t5_1d(:) = 0.0
-        t6_1d(:) = 0.0
-        t8_1d(:) = 0.0
-
-        PRD3d = 0.0
-        PRE3d = 0.0
-        PRDS3d = 0.0
-        MNUCCC3d = 0.0
-        PRA3d = 0.0
-        PRC3d = 0.0
-        PCC3d = 0.0
-        MNUCCD3d = 0.0
-        MNUCCR3d = 0.0
-        PRAI3d = 0.0
-        PRCI3d = 0.0
-        PSACWS3d = 0.0
-        PSACWI3d = 0.0
-        QMULTS3d = 0.0
-        QMULTR3d = 0.0
-        PRACS3d = 0.0
-        PCCN3d = 0.0
-        PSMLT3d = 0.0
-        EVPMS3d = 0.0
-        PIACR3d = 0.0
-        PRACI3d = 0.0
-        PIACRS3d = 0.0
-        PRACIS3d = 0.0
-        EPRD3d = 0.0
-        EPRDS3d = 0.0
-        PRACG3d = 0.0
-        PSACWG3d = 0.0
-        PGSACW3d = 0.0
-        PGRACS3d = 0.0
-        PRDG3d = 0.0
-        EPRDG3d = 0.0
-        EVPMG3d = 0.0
-        PGMLT3d = 0.0
-        PSACR3d = 0.0
-        QMULTG3d = 0.0
-        QMULTRG3d = 0.0
-
         IF ( present( ipelectmp ) ) THEN
             ipelec = ipelectmp
         ELSE
             ipelec = 0
         ENDIF
 
-        IF ( present(scw) .and. ipelec > 0 ) THEN
+        if (ipelec>0) then
+            chgiona1 = 0.0d0
+            chgiona2 = 0.0d0
+            chgiona3 = 0.0d0
+            chgneg1 = 0.0
+            chgpos1 = 0.0
+            chgneg2 = 0.0
+            chgpos2 = 0.0
+            chgneg3 = 0.0
+            chgpos3 = 0.0
+            sctot3  = 0.0d0
+            scwtot  = 0.0d0
+            scrtot  = 0.0d0
+            scitot  = 0.0d0
+            scstot  = 0.0d0
+            schtot  = 0.0d0
+            schltot  = 0.0d0
+
+            scwmax  = 0.0d0
+            scrmax  = 0.0d0
+            scimax  = 0.0d0
+            scsmax  = 0.0d0
+            schmax  = 0.0d0
+            schlmax  = 0.0d0
+
+            scwmin  = 0.0d0
+            scrmin  = 0.0d0
+            scimin  = 0.0d0
+            scsmin  = 0.0d0
+            schmin  = 0.0d0
+            schlmin  = 0.0d0
+
+            t2_1d(:) = 0.0
+            t3_1d(:) = 0.0
+            t5_1d(:) = 0.0
+            t6_1d(:) = 0.0
+            t8_1d(:) = 0.0
+
+
+            ! start here
+            PRD3d = 0.0
+            PRE3d = 0.0
+            PRDS3d = 0.0
+            MNUCCC3d = 0.0
+            PRA3d = 0.0
+            PRC3d = 0.0
+            PCC3d = 0.0
+            MNUCCD3d = 0.0
+            MNUCCR3d = 0.0
+            PRAI3d = 0.0
+            PRCI3d = 0.0
+            PSACWS3d = 0.0
+            PSACWI3d = 0.0
+            QMULTS3d = 0.0
+            QMULTR3d = 0.0
+            PRACS3d = 0.0
+            PCCN3d = 0.0
+            PSMLT3d = 0.0
+            EVPMS3d = 0.0
+            PIACR3d = 0.0
+            PRACI3d = 0.0
+            PIACRS3d = 0.0
+            PRACIS3d = 0.0
+            EPRD3d = 0.0
+            EPRDS3d = 0.0
+            PRACG3d = 0.0
+            PSACWG3d = 0.0
+            PGSACW3d = 0.0
+            PGRACS3d = 0.0
+            PRDG3d = 0.0
+            EPRDG3d = 0.0
+            EVPMG3d = 0.0
+            PGMLT3d = 0.0
+            PSACR3d = 0.0
+            QMULTG3d = 0.0
+            QMULTRG3d = 0.0
+
+
             print*, "-----------------------------------------------------------"
             print*, "at it = ", itimestep, "dt = ", dt_in, " pre print"
             print*, "ims:ime, kms:kme, jms:jme"
@@ -1429,19 +1431,21 @@ CONTAINS
 
                 !-----------------------------------------------------------------------
                 !Explicit lightning ----------------------------------------------------
-                an1d(kts:kte,1:na) = an(i, 1, kts:kte, 1:na)
-                if (ipelec>1) then
-                    elec1d(kts:kte)   =  elec(i,kts:kte,j) ! Ez here =elecsave
+                if (ipelec>0) then
+                    an1d(kts:kte,1:na) = an(i, 1, kts:kte, 1:na)
+                    if (ipelec>1) then
+                        elec1d(kts:kte)   =  elec(i,kts:kte,j) ! Ez here =elecsave
+                    end if
+                    CHACI0(:) = 0.0
+                    CSACI0(:) = 0.0
+                    CHACS0(:) = 0.0
+                    csaci0_morr(:) = 0.0
+                    umc1d(:) = 0.0
+                    umr1d(:) = 0.0
+                    umi1d(:) = 0.0
+                    ums1d(:) = 0.0
+                    umg1d(:) = 0.0
                 end if
-                CHACI0(:) = 0.0
-                CSACI0(:) = 0.0
-                CHACS0(:) = 0.0
-                csaci0_morr(:) = 0.0
-                umc1d(:) = 0.0
-                umr1d(:) = 0.0
-                umi1d(:) = 0.0
-                ums1d(:) = 0.0
-                umg1d(:) = 0.0
                 !End Explicit lightning ------------------------------------------------
                 !-----------------------------------------------------------------------
                 call MORR_TWO_MOMENT_MICRO(QC_TEND1D, QI_TEND1D, QNI_TEND1D, QR_TEND1D,            &
