@@ -1781,11 +1781,21 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
 !!                ------------------------------ explicite lightning ------------------------------
 !!                ---------------------------------------------------------------------------------
-                                      ,SCR=scr                            &
-                                      ,SCW=scw                            & !
-                                      ,SCI=sci                            & !
-                                      ,SCS=scs                            & !
-                                      ,SCH=sch                            & !
+                  ,SCR=scr                            &
+                  ,SCW=scw                            & !
+                  ,SCI=sci                            & !
+                  ,SCS=scs                            & !
+                  ,SCH=sch                            & !
+                  ,SCTOT=sctot                        & !
+                  ,NONINDUC = noninduc                & ! A
+                  ,rscghis_2d = rscghis_2d            & ! D
+                  ,INDUC = induc                      & ! D
+                  ,ELEC = elecz                       & ! E
+                  ,SCION = scion                      & ! D
+                  ,SCIONA = sciona                    & !
+                  ,dx=dx                              & !
+                  ,dy=dy                              & !
+                  ,ipelectmp = ipelectmp              & !
 !!                ------------------------------ end lightning ------------------------------------
 !!                ---------------------------------------------------------------------------------
                                                                )

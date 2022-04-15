@@ -400,6 +400,16 @@ CONTAINS
               ,SCI                            & !
               ,SCS                            & !
               ,SCH                            & !
+      ,SCTOT                          & !
+      ,NONINDUC                       & ! A
+      ,rscghis_2d                     & ! D
+      ,INDUC                          & ! D
+      ,ELEC                           & ! E
+      ,SCION                          & ! D
+      ,SCIONA                         & !
+      ,dx                             & !
+      ,dy                             & !
+      ,ipelectmp                      & !
 !!                ------------------------------ end lightning ------------------------------------
 !!                ---------------------------------------------------------------------------------
       )
@@ -500,9 +510,30 @@ CONTAINS
 !                ------------------------------ explicite lightning ------------------------------
 !                ---------------------------------------------------------------------------------
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
-              scr,scw,sci,scs,sch
+              scr,scw,sci,scs,sch,sctot,scion,sciona
+      real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
+              noninduc,induc,elec
+      real, dimension(ims:ime , jms:jme),  optional, intent(inout)::  &
+              rscghis_2d
+      real, optional, intent(in) :: dx,dy
+      integer, optional, intent(in) :: ipelectmp
 
       real, dimension(its:ite, 1, kts:kte, na) :: an
+
+      !---------------------- elec vars description --------------------------------
+      ! SCX -  total net space charge on hydrometeor species x (C/kg)
+      ! NONINDUC - total non inductive charging rates (C/m3*s)
+      ! rscghis_2d - maximum non inductive charging rate in the column (C/m3*s)
+      ! INDUC - total inductive/polarization charging rates in C/m3*s (Ziegler et al. 1991,MWR)
+      ! ELEC - electric field vector (V/m)
+      ! csaci03d = collision rate for ice-snow, nssl eq (#/kg/s)
+      ! chaci03d = collision rate for ice-graupel (#/kg/s)
+      ! chacs03d = collision rate for snow-graupel (#/kg/s)
+      ! csaci03d_morr = collision rate for ice-snow, morr eq  (#/kg/s)
+      ! umx = hydrometeor fall speed
+      ! qxsten = sedimentation rates
+      !---------------------- end elec vars description -----------------------------
+
       IF ( present(scw) .and. ipelec > 0 ) THEN
           scr = itimestep
       END IF
