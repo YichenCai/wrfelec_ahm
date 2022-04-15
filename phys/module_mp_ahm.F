@@ -105,6 +105,52 @@
       integer :: ipelec = 0
       integer :: isaund = 0
       logical :: idonic = .false.
+
+      ! For "an" indices
+      integer :: na = 9 ! to be changed later
+      integer :: ltmp
+      integer, parameter :: lqmx = 30
+      integer, parameter :: lt = 1
+      integer, parameter :: lv = 2
+      integer, parameter :: lc = 3
+      integer, parameter :: lr = 4
+      integer, parameter :: li = 5
+      !   integer, private :: lis = 0
+      integer, private :: ls = 6
+      integer, private :: lh = 7
+      !   integer, private :: lhl = 0
+      integer, private :: lhab = 7
+      integer, private :: lg = 7
+      integer, private  :: lccn = 0 ! 0 or 9, other indices adjusted accordingly
+      integer, private :: lccna = 0
+      integer, private :: lcina = 0
+      integer, private :: lcin = 0
+      integer, private :: lnc = 0
+      integer, private :: lnr = 0
+      integer, private :: lni = 0
+      !   integer, private :: lnis = 0
+      integer, private :: lns = 0
+      integer, private :: lnh = 0
+      !   integer, private :: lnhl = 0
+      ! Space charge
+      integer :: lscw = 0
+      integer :: lscr = 0
+      integer :: lsci = 0
+      !   integer :: lscis = 0
+      integer :: lscs = 0
+      integer :: lsch = 0
+      !   integer :: lschl = 0
+      !   integer :: lscwi = 0
+      integer :: lscpi = 0
+      integer :: lscni = 0
+      integer :: lscpli = 0
+      integer :: lscnli = 0
+      integer :: lne = 0 ! last varible for transforming
+
+      integer lsc(lc:lqmx)
+      integer ln(lc:lqmx)
+      integer denscale(lc:lqmx) ! flag for density scaling (mixing ratio conversion)
+      ! End "an" indices
       !---------------------------------------------------------------------------
       !End explicit lightning ----------------------------------------------------
 CONTAINS
@@ -134,6 +180,42 @@ CONTAINS
 
       IF ( ipelec > 0 .or. idonic ) THEN
           print*, 'ipelec, isaund, idonic=',ipelec, isaund, idonic
+      ENDIF
+
+      if (ipelec>0) then
+          lhab = lh ! 7
+          lccn = lhab+1 ! 8
+          lnc = lhab+2 ! 9
+          lnr = lhab+3 ! 10
+          lni = lhab+4 ! 11
+          lns = lhab+5 ! 12
+          lnh = lhab+6 ! 13
+          ltmp = lnh
+          lscw  = ltmp+1 ! 14
+          lscr  = ltmp+2 ! 15
+          lsci  = ltmp+3 ! 16
+          lscs  = ltmp+4 ! 17
+          lsch  = ltmp+5 ! 18
+          ltmp = lsch
+          lscpi = ltmp+1 ! 19
+          lscni = ltmp+2 ! 20
+          ltmp = lscni
+
+          na = ltmp ! 20
+
+          ln(:) = 0
+          ln(lc) = lnc
+          ln(lr) = lnr
+          ln(li) = lni
+          ln(ls) = lns
+          ln(lh) = lnh
+
+          lsc(:) = 0
+          lsc(lc) = lscw
+          lsc(lr) = lscr
+          lsc(li) = lsci
+          lsc(ls) = lscs
+          lsc(lh) = lsch
       ENDIF
       !---------------------------------------------------------------------------
       !End explicit lightning --------------------------------------------------------
@@ -420,6 +502,7 @@ CONTAINS
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
               scr,scw,sci,scs,sch
 
+      real, dimension(its:ite, 1, kts:kte, na) :: an
       IF ( present(scw) .and. ipelec > 0 ) THEN
           scr = itimestep
       END IF
