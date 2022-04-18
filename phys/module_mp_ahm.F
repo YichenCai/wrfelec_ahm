@@ -151,6 +151,11 @@
       integer ln(lc:lqmx)
       integer denscale(lc:lqmx) ! flag for density scaling (mixing ratio conversion)
       ! End "an" indices
+
+      ! fundamental unit of charge
+      real ec,ec_i
+      parameter (ec = 1.602e-19) ! Coulomb / proton or electron
+      parameter (ec_i = 1.0/ec) ! #proton or electron / Coulomb
       !---------------------------------------------------------------------------
       !End explicit lightning ----------------------------------------------------
 CONTAINS
@@ -530,6 +535,15 @@ CONTAINS
 
       real, dimension(its:ite, 1, kts:kte, na) :: an
 
+      double precision :: chgiona1,chgiona2,chgiona3,sctot3,scwtot,scrtot,scitot,scstot,schtot,schltot
+      double precision :: scwmax,scrmax,scimax,scsmax,schmax,schlmax
+      double precision :: scwmin,scrmin,scimin,scsmin,schmin,schlmin
+      real, dimension(its:ite, 1, kts:kte) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
+      real, dimension(its:ite,kts:kte) :: elec2d
+
+      real :: tmp_elec, dv
+
+
 #ifdef MPI
 #if defined(MPI)
               integer, parameter :: ntot = 50
@@ -551,6 +565,11 @@ CONTAINS
       ! qxsten = sedimentation rates
       !---------------------- end elec vars description -----------------------------
 
+      IF ( present( ipelectmp ) ) THEN
+          ipelec = ipelectmp
+      ELSE
+          ipelec = 0
+      ENDIF
       IF ( present(scw) .and. ipelec > 0 ) THEN
           scr = itimestep
       END IF
