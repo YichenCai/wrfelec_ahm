@@ -438,7 +438,17 @@ CONTAINS
 !     FRZNACC - accumulated grid-scale snow plus cloud ice plus graupel (mm)
 !     FRZNACCT - one time step grid scale snow plus cloud ice plus graupel (mm/time step)
 
+#if ( defined(DM_PARALLEL)  &&   ! defined(STUBMPI) )
+#define MPI
+              USE module_dm, ONLY : local_communicator, mytask
+              ! keep a spacing line here to keep Apple cpp from adding a space in front of the endif
+#endif
       IMPLICIT NONE
+#if ( defined(DM_PARALLEL)  &&   ! defined(STUBMPI) ) || defined(MPI)
+              INCLUDE 'mpif.h'
+#else
+      integer :: mytask = 0
+#endif
 
       INTEGER, INTENT(IN) :: ids, ide, jds, jde, kds, kde, &
       ims, ime, jms, jme, kms, kme, &
@@ -520,6 +530,13 @@ CONTAINS
 
       real, dimension(its:ite, 1, kts:kte, na) :: an
 
+#ifdef MPI
+#if defined(MPI)
+              integer, parameter :: ntot = 50
+              double precision  mpitotindp(ntot), mpitotoutdp(ntot)
+              INTEGER :: mpi_error_code = 1
+#endif
+#endif
       !---------------------- elec vars description --------------------------------
       ! SCX -  total net space charge on hydrometeor species x (C/kg)
       ! NONINDUC - total non inductive charging rates (C/m3*s)
