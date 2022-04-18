@@ -535,6 +535,7 @@ CONTAINS
 
       real, dimension(its:ite, 1, kts:kte, na) :: an
 
+      double precision :: chgneg1,chgpos1,chgneg2,chgpos2,chgneg3,chgpos3
       double precision :: chgiona1,chgiona2,chgiona3,sctot3,scwtot,scrtot,scitot,scstot,schtot,schltot
       double precision :: scwmax,scrmax,scimax,scsmax,schmax,schlmax
       double precision :: scwmin,scrmin,scimin,scsmin,schmin,schlmin
@@ -571,7 +572,44 @@ CONTAINS
           ipelec = 0
       ENDIF
       IF ( present(scw) .and. ipelec > 0 ) THEN
-          scr = itimestep
+          scr = itimestep ! testing
+
+          chgiona1 = 0.0d0
+          chgiona2 = 0.0d0
+          chgiona3 = 0.0d0
+          chgneg1 = 0.0
+          chgpos1 = 0.0
+          chgneg2 = 0.0
+          chgpos2 = 0.0
+          chgneg3 = 0.0
+          chgpos3 = 0.0
+          sctot3  = 0.0d0
+          scwtot  = 0.0d0
+          scrtot  = 0.0d0
+          scitot  = 0.0d0
+          scstot  = 0.0d0
+          schtot  = 0.0d0
+          schltot  = 0.0d0
+
+          scwmax  = 0.0d0
+          scrmax  = 0.0d0
+          scimax  = 0.0d0
+          scsmax  = 0.0d0
+          schmax  = 0.0d0
+          schlmax  = 0.0d0
+
+          scwmin  = 0.0d0
+          scrmin  = 0.0d0
+          scimin  = 0.0d0
+          scsmin  = 0.0d0
+          schmin  = 0.0d0
+          schlmin  = 0.0d0
+
+          t2_2d = 0.0
+          t3_2d = 0.0
+          t5_2d = 0.0
+          t6_2d = 0.0
+          t8_2d = 0.0
       END IF
 !                ------------------------------ end lightning ------------------------------------
 !                ---------------------------------------------------------------------------------
@@ -684,6 +722,44 @@ CONTAINS
             END DO
          END DO
 
+         !     ------------------------------ explicite lightning ------------------------------
+         !     ---------------------------------------------------------------------------------
+
+         IF ( present(scw) .and. ipelec > 0 ) THEN
+             an(:,1,:,:) = 0.0
+             an(its:ite,1,kts:kte,lt)   = th(its:ite,kts:kte,j)
+             an(its:ite,1,kts:kte,lscw)   = scw(its:ite,kts:kte,j) * RHO2D(its:ite,kts:kte)
+             an(its:ite,1,kts:kte,lscr)   = scr(its:ite,kts:kte,j) * RHO2D(its:ite,kts:kte)
+             an(its:ite,1,kts:kte,lsci)   = sci(its:ite,kts:kte,j) * RHO2D(its:ite,kts:kte)
+             an(its:ite,1,kts:kte,lscs)   = scs(its:ite,kts:kte,j) * RHO2D(its:ite,kts:kte)
+             an(its:ite,1,kts:kte,lsch)   = sch(its:ite,kts:kte,j) * RHO2D(its:ite,kts:kte)
+             !        IF ( lhl > 1 ) an(:,1,:,lschl)   = schl(:,:,j)
+             an(its:ite,1,kts:kte,lscpi) = Max(0.0, sciona(its:ite,kts:kte,j)) * ec_i * RHO2D(its:ite,kts:kte) ! Convert sciona[C/kg] -> an[#/m3]
+             an(its:ite,1,kts:kte,lscni) = -Min(0.0,sciona(its:ite,kts:kte,j)) * ec_i * RHO2D(its:ite,kts:kte)
+
+             DO k = kts,kte
+                 DO i = its,ite
+                     ! Fake ions for now -- will need to change this if real ions ever get used in WRF
+                     ! convert net ion density to positive or negative ions, so that underlying code is
+                     ! still ion-friendly
+                     tmp_elec =  (an(i,1,k,lscw)+ &
+                             an(i,1,k,lscr)+ &
+                             an(i,1,k,lsci)+ &
+                             an(i,1,k,lscs)+ &
+                             an(i,1,k,lsch)+ &
+                             ! an(i,1,k,lschl)+ &
+                             sciona(i,k,j)) *dx*dy*dz(i,k,j)  ! [kg/m3]*[C/kg]*[m3] = [C]
+                     chgneg1 = chgneg1 + Min(0.0, tmp_elec)
+                     chgpos1 = chgpos1 + Max(0.0, tmp_elec)
+                     chgiona1 = chgiona1 + (an(i,1,k,lscpi)-an(i,1,k,lscni)) * ec * RHO2D(i,k) * dx*dy*dz(i,k,j) ! an(lscions) are in #/m3, ec in C/#. !!! rho_igl looks like a mistake here
+                 END DO
+             END DO
+             if (ipelec>1) then
+                 elec2d(its:ite,kts:kte)   =  elec(its:ite,kts:kte,j) ! Ez here =elecsave
+             end if
+         END IF
+         !     ------------------------------ end lightning ------------------------------------
+         !     ---------------------------------------------------------------------------------
          call CPU_TIME(start)
          !print*,'sulia_harrington'
          CALL AHM_MICRO(T2D, DT, QV2D, QC2D, QR2D, QS2D, QG2D, QI2D,  &
@@ -700,7 +776,11 @@ CONTAINS
          QMULTSOUT2D,QMULTROUT2D,PIACROUT2D, PRACIOUT2D, PIACRSOUT2D, &
          PRACISOUT2D, PRACGOUT2D, PSACWGOUT2D,PGSACWOUT2D,PGRACSOUT2D,&
          PRDGOUT2D, EPRDGOUT2D, EVPMGOUT2D, PGMLTOUT2D, QMULTGOUT2D,  &
-         QMULTRGOUT2D, IMMERSION2D, PRAIOUT2D, CFRZR2D, QAGG2D, QNAGG2D)
+         QMULTRGOUT2D, IMMERSION2D, PRAIOUT2D, CFRZR2D, QAGG2D, QNAGG2D,&
+!     ------------------------------   lightning   ------------------------------------
+         an, elec2d &
+!     ------------------------------ end lightning ------------------------------------
+         )
 
 !     TRANSFER 2D ARRAYS BACK TO 3D FOR WRF
          CALL CPU_TIME(finish)
@@ -822,7 +902,9 @@ CONTAINS
       prciout, psacwsout, qmultsout, qmultrout, piacrout, praciout,&
       piacrsout, pracisout, pracgout, psacwgout, pgsacwout,        &
       pgracsout, prdgout, eprdgout, evpmgout, pgmltout, qmultgout, &
-      qmultrgout, immersion, praiout, cfrzr, qagg, qnagg)
+      qmultrgout, immersion, praiout, cfrzr, qagg, qnagg, &
+      an, elec2d &
+              )
 !****************************************************************************
 
       IMPLICIT NONE
@@ -1018,6 +1100,10 @@ CONTAINS
       
       REAL start, finish
 
+      !     ------------------------------   lightning   ------------------------------------
+      real, dimension(its:ite, 1, kts:kte, na) :: an
+      real, dimension(its:ite,kts:kte) :: elec2d
+      !     ------------------------------ end lightning ------------------------------------
       resupply=0
       masssizeflag=0
       ipart=1                   !0 for RAMS dendrites and needles (Walko et al., 1995)
