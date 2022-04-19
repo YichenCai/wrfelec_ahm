@@ -539,10 +539,12 @@ CONTAINS
       double precision :: chgiona1,chgiona2,chgiona3,sctot3,scwtot,scrtot,scitot,scstot,schtot,schltot
       double precision :: scwmax,scrmax,scimax,scsmax,schmax,schlmax
       double precision :: scwmin,scrmin,scimin,scsmin,schmin,schlmin
-      real, dimension(its:ite, 1, kts:kte) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
+      real, dimension(its:ite, 1, kts:kte) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d, t9
+      real, dimension(its:ite, 1, kts:kte) :: dz2d
       real, dimension(its:ite,kts:kte) :: elec2d
 
       real :: tmp_elec, dv
+      integer :: nx,ny,nz
 
 
 #ifdef MPI
@@ -756,6 +758,7 @@ CONTAINS
              END DO
              if (ipelec>1) then
                  elec2d(its:ite,kts:kte)   =  elec(its:ite,kts:kte,j) ! Ez here =elecsave
+                 dz2d (its:ite,1,kts:kte) = dz(its:ite,kts:kte,j)
              end if
          END IF
          !     ------------------------------ end lightning ------------------------------------
@@ -778,7 +781,8 @@ CONTAINS
          PRDGOUT2D, EPRDGOUT2D, EVPMGOUT2D, PGMLTOUT2D, QMULTGOUT2D,  &
          QMULTRGOUT2D, IMMERSION2D, PRAIOUT2D, CFRZR2D, QAGG2D, QNAGG2D,&
 !     ------------------------------   lightning   ------------------------------------
-         an, elec2d &
+                 an, elec2d, ipelec,&
+                 t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
 !     ------------------------------ end lightning ------------------------------------
          )
 
@@ -903,7 +907,8 @@ CONTAINS
       piacrsout, pracisout, pracgout, psacwgout, pgsacwout,        &
       pgracsout, prdgout, eprdgout, evpmgout, pgmltout, qmultgout, &
       qmultrgout, immersion, praiout, cfrzr, qagg, qnagg, &
-      an, elec2d &
+      an, elec2d, ipelec,&
+      t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
               )
 !****************************************************************************
 
@@ -1103,6 +1108,8 @@ CONTAINS
       !     ------------------------------   lightning   ------------------------------------
       real, dimension(its:ite, 1, kts:kte, na) :: an
       real, dimension(its:ite,kts:kte) :: elec2d
+      real, dimension(its:ite, 1, kts:kte) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
+      INTEGER, INTENT(IN)  :: ipelec
       !     ------------------------------ end lightning ------------------------------------
       resupply=0
       masssizeflag=0
@@ -8124,149 +8131,142 @@ CONTAINS
 !    !
 !    ! Subroutine for reattachment of floating ion charge
 !    !
-!    SUBROUTINE SCIONATT    &
-!            &  (nx,ny,nz,na,jyslab &
-!            &  ,nor,norz &
-!            &  ,dtp,dz3d &
-!            &  ,an &
-!            !            &  ,dn,p2 &
-!            !            &  ,pn,w &
-!            !            &  ,tmp3d &
-!            &  )
-!
-!        implicit none
-!
-!        integer :: nx,ny,nz,na
-!        integer :: ng
-!        integer :: nor,norz, jyslab ! ,nht,ngt,igsr
-!        real    :: dtp  ! time step
-!
-!
-!        !
-!        ! external temporary arrays
-!        !
-!
-!        real an(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz,na)
-!
-!        real dz3d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
-!
-!        ! local
-!
-!        integer ix,jy,kz,i,n
-!
-!        double precision frachl
-!        double precision frach
-!        double precision fracr
-!        double precision fracw
-!        double precision fraci
-!        double precision fracs
-!        double precision fractot,frac
-!        double precision dv, deninv, tmp, tmpion
-!
-!        ! density defined in nssl
-!        !        real    :: rhos = 100.
-!        !        real    :: rhog = 500. ! not correct, but for now
-!        !        real    :: rhoh = 900.
-!        !        real    :: rhor = 1000.
-!        !        real    :: rhoi = 900.
-!        !        real    :: rhow = 1000.
-!        ! density defined in morr
-!        real    :: rhos = 100.
-!        real    :: rhog = 400.
-!        real    :: rhor = 997.
-!        real    :: rhoi = 500. ! the most different
-!        real    :: rhow = 997.
-!
-!        logical, parameter :: dampicecharge = .false.    ! whether to apply charge damping to cloud ice and snow (WRF ONLY)
-!        real, parameter    :: dampchargethresh = 0.09e-9 ! charge density magnitude at which damping stops
-!        real, parameter    :: dampchargetimeconst = 3600. ! time constant for charge damping
-!
-!        IF ( lnh < 1 ) THEN ! not double-moment
-!            RETURN
-!        ENDIF
-!!        IF (IHAIL.EQ.1)  RHOG = 900.
-!
-!        DO kz = 1,nz
-!            DO jy = 1,1
-!                DO ix = 1,nx
-!                    IF ( an(ix,jy,kz,lscpi) - an(ix,jy,kz,lscni) /= 0.0 ) THEN
-!                        fracs = 0.0
-!                        fraci = 0.0
-!                        frach = 0.0
-!                        fracw = 0.0
-!                        fracr = 0.0
-!                        frachl = 0.0
-!                        if (an(ix,jy,kz,lc) > qxmin(lc)) fracw=((an(ix,jy,kz,lc)/rhow)**(2./3.) ) * Max(an(ix,jy,kz,lnc), 0.0)**(1./3.)
-!                        if (an(ix,jy,kz,lr) > qxmin(lr)) fracr=((an(ix,jy,kz,lr)/rhor)**(2./3.) ) * Max(an(ix,jy,kz,lnr), 0.0)**(1./3.)
-!                        if (an(ix,jy,kz,li_elec) > qxmin(li_elec)) fraci=((an(ix,jy,kz,li_elec)/rhoi)**(2./3.) ) * Max(an(ix,jy,kz,lni), 0.0)**(1./3.)
-!                        if (an(ix,jy,kz,ls) > qxmin(ls)) fracs=((an(ix,jy,kz,ls)/rhos)**(2./3.) ) * Max(an(ix,jy,kz,lns), 0.0)**(1./3.)
-!                        if (an(ix,jy,kz,lh) > qxmin(lh)) frach=((an(ix,jy,kz,lh)/rhog)**(2./3.) ) * Max(an(ix,jy,kz,lnh), 0.0)**(1./3.)
-!                        !                        IF ( lhl > 1 ) THEN
-!                        !                            if (an(ix,jy,kz,lhl) > qxmin(lhl)) frachl=((an(ix,jy,kz,lhl)/rhoh)**(2./3.) ) * Max(an(ix,jy,kz,lnhl), 0.0)**(1./3.)
-!                        !                        ENDIF
-!
-!
-!                        fractot = fracw + fracr + fraci + fracs + frach + frachl
-!
-!                        IF ( fractot > 0.0 ) THEN
-!                            tmpion = (an(ix,jy,kz,lscpi) - an(ix,jy,kz,lscni))*ec ! C/m3
-!
-!                            IF (fracw > 0) then
-!                                an(ix,jy,kz,lscw) = an(ix,jy,kz,lscw) + tmpion*(fracw/fractot)
-!                            ENDIF
-!
-!                            IF (fracr > 0) then
-!                                an(ix,jy,kz,lscr) = an(ix,jy,kz,lscr) + tmpion*(fracr/fractot)
-!                            ENDIF
-!
-!                            IF (fraci > 0) then
-!                                an(ix,jy,kz,lsci) = an(ix,jy,kz,lsci) + tmpion*(fraci/fractot)
-!                            ENDIF
-!
-!                            IF (fracs > 0) then ! avoid division by zero IF fractot = 0 because qx=0
-!                                an(ix,jy,kz,lscs) = an(ix,jy,kz,lscs) + tmpion*(fracs/fractot)
-!                            ENDIF
-!
-!                            IF (frach > 0) then
-!                                an(ix,jy,kz,lsch) = an(ix,jy,kz,lsch) + tmpion*(frach/fractot)
-!                            ENDIF
-!
-!                            !                            IF (lnhl > 1 .and. frachl > 0 ) then
-!                            !                                an(ix,jy,kz,lschl) = an(ix,jy,kz,lschl) + tmpion*(frachl/fractot)
-!                            !                            ENDIF
-!
-!
-!                            an(ix,jy,kz,lscpi) = 0.0
-!                            an(ix,jy,kz,lscni) = 0.0
-!
-!                        ENDIF ! fractot
-!
-!                    ENDIF ! non-zero ion charge
-!
-!                ENDDO
-!            ENDDO
-!        ENDDO
-!
-!        IF ( dampicecharge ) THEN
-!            frac = Exp(-dtp/dampchargetimeconst)
-!            DO kz = 1,nz
-!                DO jy = 1,1
-!                    DO ix = 1,nx
-!                        IF ( Abs( an(ix,jy,kz,lsci) ) > dampchargethresh ) THEN
-!                            an(ix,jy,kz,lsci) = frac*an(ix,jy,kz,lsci)
-!                        ENDIF
-!
-!                        IF ( Abs( an(ix,jy,kz,lscs) ) > dampchargethresh ) THEN
-!                            an(ix,jy,kz,lscs) = frac*an(ix,jy,kz,lscs)
-!                        ENDIF
-!
-!                    ENDDO
-!                ENDDO
-!            ENDDO
-!        ENDIF
-!
-!        RETURN
-!    END SUBROUTINE SCIONATT
+          SUBROUTINE SCIONATT    &
+                  &  (nx,ny,nz,na,jyslab &
+                  &  ,nor,norz &
+                  &  ,dtp,dz3d &
+                  &  ,an &
+                  &  )
+
+              implicit none
+
+              integer :: nx,ny,nz,na
+              integer :: ng
+              integer :: nor,norz, jyslab ! ,nht,ngt,igsr
+              real    :: dtp  ! time step
+
+
+              !
+              ! external temporary arrays
+              !
+
+              real an(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz,na)
+
+              real dz3d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
+
+              ! local
+
+              integer ix,jy,kz,i,n
+
+              double precision frachl
+              double precision frach
+              double precision fracr
+              double precision fracw
+              double precision fraci
+              double precision fracs
+              double precision fractot,frac
+              double precision dv, deninv, tmp, tmpion
+
+              ! density defined in nssl
+              !        real    :: rhos = 100.
+              !        real    :: rhog = 500. ! not correct, but for now
+              !        real    :: rhoh = 900.
+              !        real    :: rhor = 1000.
+              !        real    :: rhoi = 900.
+              !        real    :: rhow = 1000.
+              ! density defined in morr
+              real    :: rhos = 100.
+              real    :: rhog = 400.
+              real    :: rhor = 997.
+              real    :: rhoi = 500. ! the most different
+              real    :: rhow = 997.
+
+              logical, parameter :: dampicecharge = .false.    ! whether to apply charge damping to cloud ice and snow (WRF ONLY)
+              real, parameter    :: dampchargethresh = 0.09e-9 ! charge density magnitude at which damping stops
+              real, parameter    :: dampchargetimeconst = 3600. ! time constant for charge damping
+
+              IF ( lnh < 1 ) THEN ! not double-moment
+                  RETURN
+              ENDIF
+              !        IF (IHAIL.EQ.1)  RHOG = 900.
+
+              DO kz = 1,nz
+                  DO jy = 1,1
+                      DO ix = 1,nx
+                          IF ( an(ix,jy,kz,lscpi) - an(ix,jy,kz,lscni) /= 0.0 ) THEN
+                              fracs = 0.0
+                              fraci = 0.0
+                              frach = 0.0
+                              fracw = 0.0
+                              fracr = 0.0
+                              frachl = 0.0
+                        if (an(ix,jy,kz,lc) > qsmall) fracw=((an(ix,jy,kz,lc)/rhow)**(2./3.) ) * Max(an(ix,jy,kz,lnc), 0.0)**(1./3.)
+                        if (an(ix,jy,kz,lr) > qsmall) fracr=((an(ix,jy,kz,lr)/rhor)**(2./3.) ) * Max(an(ix,jy,kz,lnr), 0.0)**(1./3.)
+                        if (an(ix,jy,kz,li) > qsmall) fraci=((an(ix,jy,kz,li)/rhoi)**(2./3.) ) * Max(an(ix,jy,kz,lni), 0.0)**(1./3.)
+                        if (an(ix,jy,kz,ls) > qsmall) fracs=((an(ix,jy,kz,ls)/rhos)**(2./3.) ) * Max(an(ix,jy,kz,lns), 0.0)**(1./3.)
+                        if (an(ix,jy,kz,lh) > qsmall) frach=((an(ix,jy,kz,lh)/rhog)**(2./3.) ) * Max(an(ix,jy,kz,lnh), 0.0)**(1./3.)
+
+                              fractot = fracw + fracr + fraci + fracs + frach + frachl
+
+                              IF ( fractot > 0.0 ) THEN
+                                  tmpion = (an(ix,jy,kz,lscpi) - an(ix,jy,kz,lscni))*ec ! C/m3
+
+                                  IF (fracw > 0) then
+                                      an(ix,jy,kz,lscw) = an(ix,jy,kz,lscw) + tmpion*(fracw/fractot)
+                                  ENDIF
+
+                                  IF (fracr > 0) then
+                                      an(ix,jy,kz,lscr) = an(ix,jy,kz,lscr) + tmpion*(fracr/fractot)
+                                  ENDIF
+
+                                  IF (fraci > 0) then
+                                      an(ix,jy,kz,lsci) = an(ix,jy,kz,lsci) + tmpion*(fraci/fractot)
+                                  ENDIF
+
+                                  IF (fracs > 0) then ! avoid division by zero IF fractot = 0 because qx=0
+                                      an(ix,jy,kz,lscs) = an(ix,jy,kz,lscs) + tmpion*(fracs/fractot)
+                                  ENDIF
+
+                                  IF (frach > 0) then
+                                      an(ix,jy,kz,lsch) = an(ix,jy,kz,lsch) + tmpion*(frach/fractot)
+                                  ENDIF
+
+                                  !                            IF (lnhl > 1 .and. frachl > 0 ) then
+                                  !                                an(ix,jy,kz,lschl) = an(ix,jy,kz,lschl) + tmpion*(frachl/fractot)
+                                  !                            ENDIF
+
+
+                                  an(ix,jy,kz,lscpi) = 0.0
+                                  an(ix,jy,kz,lscni) = 0.0
+
+                              ENDIF ! fractot
+
+                          ENDIF ! non-zero ion charge
+
+                      ENDDO
+                  ENDDO
+              ENDDO
+
+              IF ( dampicecharge ) THEN
+                  frac = Exp(-dtp/dampchargetimeconst)
+                  DO kz = 1,nz
+                      DO jy = 1,1
+                          DO ix = 1,nx
+                              IF ( Abs( an(ix,jy,kz,lsci) ) > dampchargethresh ) THEN
+                                  an(ix,jy,kz,lsci) = frac*an(ix,jy,kz,lsci)
+                              ENDIF
+
+                              IF ( Abs( an(ix,jy,kz,lscs) ) > dampchargethresh ) THEN
+                                  an(ix,jy,kz,lscs) = frac*an(ix,jy,kz,lscs)
+                              ENDIF
+
+                          ENDDO
+                      ENDDO
+                  ENDDO
+              ENDIF
+
+              RETURN
+          END SUBROUTINE SCIONATT
 
     ! ##############################################################################
 
