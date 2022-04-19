@@ -574,7 +574,7 @@ CONTAINS
           ipelec = 0
       ENDIF
       IF ( present(scw) .and. ipelec > 0 ) THEN
-          scr = itimestep ! testing
+          scr = itimestep * 1e-18 ! testing
 
           chgiona1 = 0.0d0
           chgiona2 = 0.0d0
@@ -785,6 +785,199 @@ CONTAINS
                  t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
 !     ------------------------------ end lightning ------------------------------------
          )
+!     ------------------------------   LIGHTNING --------------------------------------
+          IF (IPELEC>0) THEN
+             nx = ite-its+1
+             ny = 1         ! set up as 2D slabs
+             nz = kte-kts+1
+
+             ! ------------------ compute ind/nonind charge rates ------------------
+             IF ( present( noninduc ) .and. ipelec >= 1 ) THEN
+                 DO k = kts,kte
+                     DO i = its,ite
+                         induc(i,k,j)  = t5_2d(i,1,k) ! schacw
+                         noninduc(i,k,j) = (t2_2d(i,1,k) + t3_2d(i,1,k) + t6_2d(i,1,k) + t8_2d(i,1,k)) ! schaci + schacs
+                         IF ( .not. ( noninduc(i,k,j) > -1.e-3 .and. noninduc(i,k,j) < 1.e-3 ) ) THEN
+                             write(0,*) 'problem with noninduc! i,j,k,noninduc = ',i,j,k,noninduc(i,k,j)
+                             STOP
+                         ENDIF
+                         IF ( .not. ( induc(i,k,j) > -1.e-3 .and. induc(i,k,j) < 1.e-3 ) ) THEN
+                             write(0,*) 'problem with induc! i,j,k,induc = ',i,j,k,induc(i,k,j),t5_2d(i,1,k)
+                             STOP
+                         ENDIF
+                         IF ( present( rscghis_2d ) ) THEN
+                             t9(i,1,1) = t9(i,1,1) + Abs( noninduc(i,k,j) )*dz(i,k,j)
+                         ENDIF
+                     ENDDO
+                 ENDDO
+                 IF ( present( rscghis_2d ) ) THEN
+                     DO i = its,ite
+                         rscghis_2d(i,j) = Max( rscghis_2d(i,j), t9(i,1,1) )
+                     ENDDO
+                 ENDIF
+             ENDIF
+
+             IF ( present( sciona ) .and. lnh > 1) THEN
+                 CALL SCIONATT    &
+                         &  (nx,ny,nz,na,j &
+                         &  ,0,0 &
+                         &  ,dt,dz2d &
+                         &  ,an &
+                         &  )
+             ENDIF
+
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             !!!  Collect into chg...2 (an[m-3])
+             DO k = kts,kte
+                 DO i = its,ite
+                     tmp_elec =   (an(i,1,k,lscw)+ &
+                             an(i,1,k,lscr)+ &
+                             an(i,1,k,lsci)+ &
+                             an(i,1,k,lscs)+ &
+                             an(i,1,k,lsch)+ &
+                             (an(i,1,k,lscpi)-an(i,1,k,lscni))*ec) *dx*dy*dz(i,k,j)
+                     chgneg2 = chgneg2 + Min(0.0, tmp_elec)
+                     chgpos2 = chgpos2 + Max(0.0, tmp_elec)
+                     chgiona2 = chgiona2 + (an(i,1,k,lscpi)-an(i,1,k,lscni)) * ec * RHO2D(i,k) * dx*dy*dz(i,k,j)
+                 ENDDO
+             ENDDO
+             !!!  End chg...2
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+             scw(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscw) / RHO2D(its:ite,kts:kte)
+             scr(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscr) / RHO2D(its:ite,kts:kte)
+             sci(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lsci) / RHO2D(its:ite,kts:kte)
+             scs(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscs) / RHO2D(its:ite,kts:kte)
+             sch(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lsch) / RHO2D(its:ite,kts:kte)
+             sctot(its:ite,kts:kte,j)  = scw(its:ite,kts:kte,j) &
+                                        +scr(its:ite,kts:kte,j) &
+                                        +sci(its:ite,kts:kte,j) &
+                                        +scs(its:ite,kts:kte,j) &
+                                        +sch(its:ite,kts:kte,j) &
+                                        +sciona(its:ite,kts:kte,j) ! to get C/m3 for RHS calc later on
+
+             DO i = its,ite
+                 IF ( i.le.(ids+2) .or. i.ge.(ide-2)  ) THEN
+                     IF ( j.le.(jds+2) .or. j.ge.(jde-2) ) THEN
+                         scw(i,kts:kte,j) = 0.
+                         scr(i,kts:kte,j) = 0.
+                         sci(i,kts:kte,j) = 0.
+                         scs(i,kts:kte,j) = 0.
+                         sch(i,kts:kte,j) = 0.
+                         sctot(i,kts:kte,j) = 0.
+                     ENDIF
+                 endif
+             enddo
+
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             !!!  Collect into chg...3 (an[kg-1])
+             DO k = kts,kte
+                 DO i = its,ite
+                     tmp_elec =  rho(i,k,j)*(an(i,1,k,lscw)+ &
+                             an(i,1,k,lscr)+ &
+                             an(i,1,k,lsci)+ &
+                             an(i,1,k,lscs)+ &
+                             an(i,1,k,lsch)+ &
+                             sciona(i,k,j)) *dx*dy*dz(i,k,j)
+                     chgneg3 = chgneg3 + Min(0.0, tmp_elec)
+                     chgpos3 = chgpos3 + Max(0.0, tmp_elec)
+                     chgiona3 = chgiona3 + sciona(i,k,j)*rho(i,k,j)*dx*dy*dz(i,k,j)
+                 END DO
+             end do
+             !!!  End chg...3
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+             ! ------------------ For mpi calculation ------------------------
+             dv = rho(i,k,j)*dx*dy*dz(i,k,j)
+             IF ( present(elec) ) THEN
+                 sctot3 = sctot3 + sctot(i,k,j)*dx*dy*dz(i,k,j)
+                 scwtot  = scwtot + scw(i,k,j)*dv
+                 scrtot  = scrtot + scr(i,k,j)*dv
+                 scitot  = scitot + sci(i,k,j)*dv
+                 scstot  = scstot + scs(i,k,j)*dv
+                 schtot  = schtot + sch(i,k,j)*dv
+
+                 scwmax = Max( scwmax, scw(i,k,j) )
+                 scrmax = Max( scrmax, scr(i,k,j) )
+                 scimax = Max( scimax, sci(i,k,j) )
+                 scsmax = Max( scsmax, scs(i,k,j) )
+                 schmax = Max( schmax, sch(i,k,j) )
+
+                 scwmin = Min( scwmin, scw(i,k,j) )
+                 scrmin = Min( scrmin, scr(i,k,j) )
+                 scimin = Min( scimin, sci(i,k,j) )
+                 scsmin = Min( scsmin, scs(i,k,j) )
+                 schmin = Min( schmin, sch(i,k,j) )
+             ENDIF
+
+             IF ( present( scw ) ) THEN
+#ifdef DM_PARALLEL
+                   mpitotindp(1)  = chgpos1
+                   mpitotindp(2)  = chgneg1
+                   mpitotindp(3)  = chgpos2
+                   mpitotindp(4)  = chgneg2
+                   mpitotindp(5)  = chgpos3
+                   mpitotindp(6)  = chgneg3
+                   mpitotindp(7)  = chgiona1
+                   mpitotindp(8)  = chgiona2
+                   mpitotindp(9)  = chgiona3
+                   mpitotindp(10)  = sctot3
+                   mpitotindp(11)  = scwtot
+                   mpitotindp(12)  = scrtot
+                   mpitotindp(13)  = scitot
+                   mpitotindp(14)  = scstot
+                   mpitotindp(15)  = schtot
+                   mpitotindp(16)  = schltot
+!                   CALL MPI_Reduce(mpitotindp, mpitotoutdp, 16, MPI_DOUBLE_PRECISION, MPI_SUM, 0, local_communicator, mpi_error_code)
+                   IF ( mytask == 0 ) THEN
+                       chgpos1 = mpitotoutdp(1)
+                       chgneg1 = mpitotoutdp(2)
+                       chgpos2 = mpitotoutdp(3)
+                       chgneg2 = mpitotoutdp(4)
+                       chgpos3 = mpitotoutdp(5)
+                       chgneg3 = mpitotoutdp(6)
+                       chgiona1 = mpitotoutdp(7)
+                       chgiona2 = mpitotoutdp(8)
+                       chgiona3 = mpitotoutdp(9)
+                       sctot3   = mpitotoutdp(10)
+                       scwtot  = mpitotoutdp(11)
+                       scrtot  = mpitotoutdp(12)
+                       scitot  = mpitotoutdp(13)
+                       scstot  = mpitotoutdp(14)
+                       schtot  = mpitotoutdp(15)
+                       schltot = mpitotoutdp(16)
+                   ENDIF
+                   mpitotindp(1)  = scwmax
+                   mpitotindp(2)  = scrmax
+                   mpitotindp(3)  = scimax
+                   mpitotindp(4)  = scsmax
+                   mpitotindp(5)  = schmax
+                   mpitotindp(6)  = schlmax
+                   mpitotindp(7)  = -scwmin
+                   mpitotindp(8)  = -scrmin
+                   mpitotindp(9)  = -scimin
+                   mpitotindp(10) = -scsmin
+                   mpitotindp(11) = -schmin
+                   mpitotindp(12) = -schlmin
+!                   CALL MPI_Reduce(mpitotindp, mpitotoutdp, 16, MPI_DOUBLE_PRECISION, MPI_MAX, 0, local_communicator, mpi_error_code)
+                   IF ( mytask == 0 ) THEN
+                       scwmax  = mpitotoutdp(1)
+                       scrmax  = mpitotoutdp(2)
+                       scimax  = mpitotoutdp(3)
+                       scsmax  = mpitotoutdp(4)
+                       schmax  = mpitotoutdp(5)
+                       schlmax = mpitotoutdp(6)
+                       scwmin  = -mpitotoutdp(7)
+                       scrmin  = -mpitotoutdp(8)
+                       scimin  = -mpitotoutdp(9)
+                       scsmin  = -mpitotoutdp(10)
+                       schmin  = -mpitotoutdp(11)
+                       schlmin = -mpitotoutdp(12)
+                   ENDIF
+#endif
+              ENDIF ! present( scw )
+         ENDIF ! IPELEC>0
+!     ------------------------------ end lightning ------------------------------------
 
 !     TRANSFER 2D ARRAYS BACK TO 3D FOR WRF
          CALL CPU_TIME(finish)
