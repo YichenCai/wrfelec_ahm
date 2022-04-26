@@ -574,7 +574,7 @@ CONTAINS
           ipelec = 0
       ENDIF
       IF ( present(scw) .and. ipelec > 0 ) THEN
-          scr = itimestep * 1e-18 ! testing
+!          scr = itimestep * 1e-18 ! testing
 
           chgiona1 = 0.0d0
           chgiona2 = 0.0d0
@@ -1299,10 +1299,114 @@ CONTAINS
       REAL start, finish
 
       !     ------------------------------   lightning   ------------------------------------
-      real, dimension(its:ite, 1, kts:kte, na) :: an
-      real, dimension(its:ite,kts:kte) :: elec2d
-      real, dimension(its:ite, 1, kts:kte) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
+      ! passed in
+      real, dimension(its:ite, 1, kts:kte, na), INTENT(INOUT) :: an
+      real, dimension(its:ite,kts:kte), INTENT(INOUT) :: elec2d
+      real, dimension(its:ite, 1, kts:kte), INTENT(INOUT) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
       INTEGER, INTENT(IN)  :: ipelec
+
+      ! constants
+      REAL DIAG,DIAS,DIAI ! # WEIGHTED MEAN DIAMETER
+      REAL VT ! RELATIVE FALL SPEED
+      REAL ESICLSN,EHICLSN,EHSCLSN ! COLLISION EFFICIENCY
+      REAL BB_G,BB_I,BB_S
+      REAL XNU_G,XNU_I,XNU_S
+      REAL XMU_G,XMU_I,XMU_S
+      REAL DA0LH,DA0LI,DA0LS,DAB0LH_IH,DAB0LH_SH
+      REAL RVT,AA2      ! RATIO OF COLLECTION KERNELS (ZRNIC ET AL, 1993)
+      REAL XV_I,XV_S ! VOLUMN OF ICE,SNOW. NEEDED FOR CSACI0
+      PARAMETER ( RVT = 0.104, AA2 = 5.78E3 )
+      REAL, PARAMETER :: CINU = 0.0
+      REAL :: DTPINV, DTP
+      INTEGER, PARAMETER :: ITEST=1
+      REAL CLIONPMX,CLIONNMX
+      PARAMETER (CLIONPMX=1.E9,CLIONNMX=1.E9) ! TAKAHASHI 84
+      real mixedphasefac
+      real qconkq,qconm,qconn,qsign,ftelwc,elecfac
+      real cfce15,gf8,gf4i,gf3p5,gf1a,gf1p5
+      logical :: csi_morr = .True.
+      real ni_elec
+      real, parameter :: tfr = 273.15, thnuc = 235.15
+
+      ! tmps..
+      REAL TMP, tmppre
+      REAL :: tmp1 = 0.
+      REAL CCWTMP,CCITMP ! ,CIPTMP,CIRTMP
+      DOUBLE PRECISION FRAC_elec
+      INTEGER IL, IC
+      REAL SCFAC
+      REAL CPQC,CPCI,CPQC0,CPCI0
+      REAL QCWTMP(its:ite,kts:kte)
+      REAL QCITMP
+      REAL IL5(its:ite,kts:kte)
+      real delqnxa(lc:lqmx)
+      real delqxxa(lc:lqmx)
+      integer idelq
+!      real :: scworig=0.0
+      integer iltest
+
+      REAL, DIMENSION(its:ite,kts:kte) ::   CSACI0 ! SNOW-ICE COLLISION RATE (#COLLI./M3/S)
+      REAL, DIMENSION(its:ite,kts:kte) ::   CHACI0 ! GRAUP-ICE COLLISION RATE (#COLLI./M3/S)
+      REAL, DIMENSION(its:ite,kts:kte) ::   CHACS0 ! GRAUP-SNOW COLLISION RATE (#COLLI./M3/S)
+      ! csaci0_morr is simply 9 times NPRAI for now, since eii=0.1
+      REAL, DIMENSION(its:ite,kts:kte) ::   csaci0_morr ! SNOW-ICE COLLISION RATE, morr (#COLLI./kg/S)
+      REAL, DIMENSION(its:ite,kts:kte, lscw:lsch) :: DUMSC ! for use in sedimentation
+      REAL :: SCX(its:ite,kts:kte,LC:LHAB) ! space charge per m3
+      REAL, DIMENSION(its:ite,kts:kte) :: CIONP,CIONN,CLIONP,CLIONN,CIONPMXD,CIONNMXD
+      REAL temcg(its:ite,kts:kte) ! T in Celcius
+      REAL dezcomp(its:ite,kts:kte)
+      integer iexy(lc:lqmx,lc:lqmx)
+      real exy(its:ite,kts:kte,ls:lhab,lc:ls) ! sticking efficiency
+      real cxacy(its:ite,kts:kte,ls:lhab,lc:ls) ! collision rates
+      real xdia(its:ite,kts:kte,lc:lhab) ! diameter; =1/lamx
+      real umx(its:ite,kts:kte,lc:lhab) ! fall speed
+      real rarx(its:ite,kts:kte,ls:lhab)
+
+      ! scxacy series
+      real :: scsacw(its:ite,kts:kte) ! inductive
+      real :: scsaci(its:ite,kts:kte) ! noninductive
+      !
+      real :: schacw(its:ite,kts:kte) ! inductive
+      real :: schaci(its:ite,kts:kte), schacs(its:ite,kts:kte) ! noninductive
+      !
+      real :: scxacy(its:ite,kts:kte,ls:lhab,lc:ls)
+
+      ! charge per kg hdmt
+      real :: fscrw(its:ite,kts:kte)
+      real :: fsccw(its:ite,kts:kte)
+      real :: fscci(its:ite,kts:kte)
+      real :: fscsw(its:ite,kts:kte)
+      real :: fschw(its:ite,kts:kte)
+
+      ! production of space charge term  + / -
+      real ::  psctot(its:ite,kts:kte)
+      real ::  psccwi(its:ite,kts:kte), psccwd(its:ite,kts:kte) ! cloud water
+      real ::  psccii(its:ite,kts:kte), psccid(its:ite,kts:kte) ! ice crystals
+      real ::  pscrwi(its:ite,kts:kte), pscrwd(its:ite,kts:kte) ! rain water
+      real ::  pscswi(its:ite,kts:kte), pscswd(its:ite,kts:kte) ! snow
+      real ::  pschwi(its:ite,kts:kte), pschwd(its:ite,kts:kte) ! graupel
+
+      ! production of space charge from mass transfer
+      real ::  psccwmi(its:ite,kts:kte), psccwmd(its:ite,kts:kte)
+      real ::  psccimi(its:ite,kts:kte), psccimd(its:ite,kts:kte)
+      real ::  pscrwmi(its:ite,kts:kte), pscrwmd(its:ite,kts:kte)
+      real ::  pscswmi(its:ite,kts:kte), pscswmd(its:ite,kts:kte)
+      real ::  pschwmi(its:ite,kts:kte), pschwmd(its:ite,kts:kte)
+
+      ! ions: assume mass = 0
+      real ::  pscpii(its:ite,kts:kte), pscpid(its:ite,kts:kte) !positive ions
+      real ::  pscnii(its:ite,kts:kte), pscnid(its:ite,kts:kte) !negative ions
+      real ::  pscplii(its:ite,kts:kte), pscplid(its:ite,kts:kte) !positive (large) ions
+      real ::  pscnlii(its:ite,kts:kte), pscnlid(its:ite,kts:kte) !negative (large) ions
+
+      ! sedimentation rates
+      real ::  pscc_sed(kts:kte)
+      real ::  pscr_sed(kts:kte)
+      real ::  psci_sed(kts:kte)
+      real ::  pscs_sed(kts:kte)
+      real ::  pscg_sed(kts:kte)
+      real, dimension(kts:kte) :: faloutscc,faloutscr,faloutsci,faloutscs,faloutscg
+      real :: faltndscc,faltndscr,faltndsci,faltndscs,faltndscg
       !     ------------------------------ end lightning ------------------------------------
       resupply=0
       masssizeflag=0
