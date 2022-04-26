@@ -1323,10 +1323,14 @@ CONTAINS
       PARAMETER (CLIONPMX=1.E9,CLIONNMX=1.E9) ! TAKAHASHI 84
       real mixedphasefac
       real qconkq,qconm,qconn,qsign,ftelwc,elecfac
-      real cfce15,gf8,gf4i,gf3p5,gf1a,gf1p5
+      real cfce15,gf8,gf4i,gf3p5,gf1a,gf1p5,gf4p5
       logical :: csi_morr = .True.
       real ni_elec
       real, parameter :: tfr = 273.15, thnuc = 235.15
+      real    :: delqnia = -50.0e-14
+      real    :: delqxia =  50.0e-14
+      real    :: delqnsa = -50.0e-14
+      real    :: delqxsa =  50.0e-14
 
       ! tmps..
       REAL TMP, tmppre
@@ -1407,6 +1411,143 @@ CONTAINS
       real ::  pscg_sed(kts:kte)
       real, dimension(kts:kte) :: faloutscc,faloutscr,faloutsci,faloutscs,faloutscg
       real :: faltndscc,faltndscr,faltndsci,faltndscs,faltndscg
+
+      IF (IPELEC>0) THEN
+          ! INITIALIZW VALUES NEEDED FOR EXPLICIT LIGHTNING
+
+          DTP = DT
+          DTPINV = 1.D0/DTP
+
+          BB_G = 1./3.
+          BB_I = 0.3429
+          BB_S = 1./3.
+
+          XNU_G = (0.-2.)/3.
+          XNU_I = 0.
+          XNU_S = -0.8
+
+          XMU_G = 1./3.
+          XMU_I = 1.
+          XMU_S = 1.
+
+          DA0LH = DELBK(BB_G, XNU_G, XMU_G, 0)
+          DA0LI = DELBK(BB_I, XNU_I, XMU_I, 0)
+          DA0LS = DELBK(BB_S, XNU_S, XMU_S, 0)
+          DAB0LH_IH = DELABK(BB_I, BB_G, XNU_I, XNU_G, XMU_I, XMU_G, 0)
+          DAB0LH_SH = DELABK(BB_S, BB_G, XNU_S, XNU_G, XMU_S, XMU_G, 0)
+          gf4p5 = 11.63172839656745 ! gamma(4.0+0.5)
+          gf3p5 = 3.32335097 ! gamma(3.5)
+          gf1p5 = 0.8862269255  ! gamma(1.5)
+
+          DO i = its,ite
+              DO k = kts,kte
+                  dezcomp(i,k) = Max(-1.00e5, Min(elec2d(i,k),1.00e5) ) ! Ez is passed (elecsave)
+              END DO
+          END DO
+
+          mixedphasefac = 1.0
+
+          iexy(:,:)=0 ! sets to zero the ones I might have forgotten
+          !     snow
+          iexy(ls,li) = 1
+          iexy(ls,lc) = 1 ; iexy(ls,lr) = 0 ;
+          !     graupel
+          iexy(lh,ls)  = 1 ; iexy(lh,li) = 1 ;
+          iexy(lh,lc) = 1 ; iexy(lh,lr)  = 0 ;
+
+          delqnxa(lc:lqmx) = 0.0 ! delqnia
+          delqxxa(lc:lqmx) = 0.0 ! delqxia
+          delqnxa(li) = delqnia
+          delqxxa(li) = delqxia
+          delqnxa(ls) = delqnsa
+          delqxxa(ls) = delqxsa
+
+          elecfac = 1.0
+
+          ! Initialization
+
+          !        LAMC(kts:kte) = 0.0 ! safety precaution for use in induc charging
+          scxacy = 0.0
+          cxacy  = 0.0
+          xdia   = 0.0
+          scx    = 0.0
+          exy    = 0.0
+          umx    = 0.0
+
+          schacw = 0.0
+          scsacw = 0.0
+          schaci = 0.0
+          scsaci = 0.0
+          schacs = 0.0
+
+          fscrw = 0.0
+          fsccw = 0.0
+          fscci = 0.0
+          fscsw = 0.0
+          fschw = 0.0
+
+          psccwi = 0.0 ! cloud water
+          psccwd = 0.0
+          psccwmi = 0.0
+          psccwmd = 0.0
+          psccii = 0.0 ! cloud ice
+          psccid = 0.0
+          psccimi = 0.0
+          psccimd = 0.0
+          pscrwi = 0.0 ! rain water
+          pscrwd = 0.0
+          pscrwmi = 0.0
+          pscrwmd = 0.0
+          pscswi = 0.0 ! snow water
+          pscswd = 0.0
+          pscswmi = 0.0
+          pscswmd = 0.0
+          pschwi = 0.0 ! graupel
+          pschwd = 0.0
+          pschwmi = 0.0
+          pschwmd = 0.0
+
+          pscpii = 0.0
+          pscpid = 0.0
+          pscnii = 0.0
+          pscnid = 0.0
+          pscplii = 0.0
+          pscplid = 0.0
+          pscnlii = 0.0
+          pscnlid = 0.0
+
+          pscc_sed = 0.0
+          pscr_sed = 0.0
+          psci_sed = 0.0
+          pscs_sed = 0.0
+          pscg_sed = 0.0
+
+          CSACI0 = 0.0
+          CHACI0 = 0.0
+          CHACS0 = 0.0
+          csaci0_morr = 0.0
+
+          t2_2d = 0.0
+          t3_2d = 0.0
+          t5_2d = 0.0
+          t6_2d = 0.0
+          t8_2d = 0.0
+
+          faloutscc = 0.0
+          faloutscr = 0.0
+          faloutsci = 0.0
+          faloutscs = 0.0
+          faloutscg = 0.0
+
+          faltndscc = 0.0
+          faltndscr = 0.0
+          faltndsci = 0.0
+          faltndscs = 0.0
+          faltndscg = 0.0
+
+          DUMSC = 0.0
+
+      END IF !(IPELEC>0)
       !     ------------------------------ end lightning ------------------------------------
       resupply=0
       masssizeflag=0
@@ -5810,118 +5951,126 @@ CONTAINS
 !      RETURN
 !      END FUNCTION wrf_dm_on_monitor
 
-!    !    -----------------------------------------------------------------------!
-!    !    ------------------------  Explicit Lightning  -------------------------!
-!    Function delbk(bb,nu,mu,k)
-!        !
-!        !  Purpose: Caluculates collection coefficients following Siefert (2006)
-!        !
-!        !  delbk is equation (90) (b collecting b -- self-collection)
-!        !  mass-diameter relationship: D = a*x**(b), where x = particle mass
-!        !  general distribution: n(x) = A*x**(nu)*Exp(-lam*x**(mu))
-!        !  where
-!        !      A = mu*N/(Gamma((nu+1)/mu)) *lam**((nu+1)/mu)
-!        !
-!        !      lam = ( Gamma((nu+1)/mu)/Gamma((nu+2)/mu) * xbar )**(-mu)
-!        !
-!        !     where  xbar = L/N  (mass content)/(number concentration) = q*rhoa/N
-!        !
-!
-!        implicit none
-!        real delbk
-!        real nu, mu, bb
-!        integer k
-!        double precision gmoi(0:3001) ! ,gmod(0:ngm1,0:ngm2),gmdi(0:ngm1,0:ngm2)
-!
-!!        real tmp, del
-!!        real x1, x2, x3, x4
-!!        integer i
-!
-!!        tmp = ((1.0 + nu)/mu)
-!!        i = Int(dgami*(tmp))
-!!        del = tmp - dgam*i
-!!        x1 = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!!
-!!        tmp = ((2.0 + nu)/mu)
-!!        i = Int(dgami*(tmp))
-!!        del = tmp - dgam*i
-!!        x2 = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!!
-!!        tmp = ((1.0 + 2.0*bb + k + nu)/mu)
-!!        i = Int(dgami*(tmp))
-!!        del = tmp - dgam*i
-!!        x3 = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!!
-!!        !      delbk =  &
-!!        !     &  ((Gamma_sp((1.0 + nu)/mu)/Gamma_sp((2.0 + nu)/mu))**(2.0*bb + k)* &
-!!        !     &    Gamma_sp((1.0 + 2.0*bb + k + nu)/mu))/Gamma_sp((1.0 + nu)/mu)
-!!
-!!        delbk =  &
-!!                &  ((x1/x2)**(2.0*bb + k)* &
-!!                &    x3)/x1
-!
-!        RETURN
-!    END  Function delbk
-!
-!    !+---+-----------------------------------------------------------------+
-!
-!    Function delabk(ba,bb,nua,nub,mua,mub,k)
-!
-!        implicit none
-!        real delabk
-!        real nua, mua, ba
-!        integer k
-!        real nub, mub, bb
-!
-!        integer i
-!        real tmp,del
-!
-!        real g1pnua, g2pnua, g1pbapnua, g1pbbpk, g1pnub, g2pnub
-!
-!        tmp = (1. + nua)/mua
-!        i = Int(dgami*(tmp))
-!        del = tmp - dgam*i
-!        IF ( i+1 > ngm0 ) THEN
-!            write(0,*) 'delabk: i+1 > ngm0!!!!',i,ngm0,nua,mua,tmp
-!            STOP
-!        ENDIF
-!        g1pnua = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!        !        write(91,*) 'delabk: g1pnua,gamma = ',g1pnua,Gamma_sp((1. + nua)/mua)
-!
-!        tmp = ((2. + nua)/mua)
-!        i = Int(dgami*(tmp))
-!        del = tmp - dgam*i
-!        g2pnua = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!
-!        tmp = ((1. + ba + nua)/mua)
-!        i = Int(dgami*(tmp))
-!        del = tmp - dgam*i
-!        g1pbapnua = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!
-!        tmp = ((1. + nub)/mub)
-!        i = Int(dgami*(tmp))
-!        del = tmp - dgam*i
-!        g1pnub = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!
-!        tmp = ((2 + nub)/mub)
-!        i = Int(dgami*(tmp))
-!        del = tmp - dgam*i
-!        g2pnub = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!
-!        tmp = ((1. + bb + k + nub)/mub)
-!        i = Int(dgami*(tmp))
-!        del = tmp - dgam*i
-!        g1pbbpk = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
-!
-!        delabk =  &
-!                &  (2.*(g1pnua/g2pnua)**ba*     &
-!                &    g1pbapnua*                                               &
-!                &    (g1pnub/g2pnub)**(bb + k)*                                &
-!                &    g1pbbpk)/                                                &
-!                &  (g1pnua*g1pnub)
-!
-!        RETURN
-!    END Function delabk
+          !    -----------------------------------------------------------------------!
+          !    ------------------------  Explicit Lightning  -------------------------!
+          Function delbk(bb,nu,mu,k)
+              !
+              !  Purpose: Caluculates collection coefficients following Siefert (2006)
+              !
+              !  delbk is equation (90) (b collecting b -- self-collection)
+              !  mass-diameter relationship: D = a*x**(b), where x = particle mass
+              !  general distribution: n(x) = A*x**(nu)*Exp(-lam*x**(mu))
+              !  where
+              !      A = mu*N/(Gamma((nu+1)/mu)) *lam**((nu+1)/mu)
+              !
+              !      lam = ( Gamma((nu+1)/mu)/Gamma((nu+2)/mu) * xbar )**(-mu)
+              !
+              !     where  xbar = L/N  (mass content)/(number concentration) = q*rhoa/N
+              !
+
+              implicit none
+              real delbk
+              real nu, mu, bb
+              integer k
+        integer ngm0,ngm1,ngm2
+        parameter (ngm0=3001,ngm1=500,ngm2=500)
+        double precision, parameter :: dgam = 0.01, dgami = 100.
+        double precision gmoi(0:ngm0) ! ,gmod(0:ngm1,0:ngm2),gmdi(0:ngm1,0:ngm2)
+
+              real tmp, del
+              real x1, x2, x3, x4
+              integer i
+
+              tmp = ((1.0 + nu)/mu)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              x1 = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              tmp = ((2.0 + nu)/mu)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              x2 = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              tmp = ((1.0 + 2.0*bb + k + nu)/mu)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              x3 = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              !      delbk =  &
+              !     &  ((Gamma_sp((1.0 + nu)/mu)/Gamma_sp((2.0 + nu)/mu))**(2.0*bb + k)* &
+              !     &    Gamma_sp((1.0 + 2.0*bb + k + nu)/mu))/Gamma_sp((1.0 + nu)/mu)
+
+              delbk =  &
+                      &  ((x1/x2)**(2.0*bb + k)* &
+                      &    x3)/x1
+
+              RETURN
+          END  Function delbk
+          !
+          !    !+---+-----------------------------------------------------------------+
+          !
+          Function delabk(ba,bb,nua,nub,mua,mub,k)
+
+              implicit none
+              real delabk
+              real nua, mua, ba
+              integer k
+              real nub, mub, bb
+
+              integer i
+              real tmp,del
+
+              real g1pnua, g2pnua, g1pbapnua, g1pbbpk, g1pnub, g2pnub
+
+        integer ngm0,ngm1,ngm2
+        parameter (ngm0=3001,ngm1=500,ngm2=500)
+        double precision, parameter :: dgam = 0.01, dgami = 100.
+        double precision gmoi(0:ngm0) ! ,gmod(0:ngm1,0:ngm2),gmdi(0:ngm1,0:ngm2)
+
+              tmp = (1. + nua)/mua
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              IF ( i+1 > ngm0 ) THEN
+                  write(0,*) 'delabk: i+1 > ngm0!!!!',i,ngm0,nua,mua,tmp
+                  STOP
+              ENDIF
+              g1pnua = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+              !        write(91,*) 'delabk: g1pnua,gamma = ',g1pnua,Gamma_sp((1. + nua)/mua)
+
+              tmp = ((2. + nua)/mua)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              g2pnua = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              tmp = ((1. + ba + nua)/mua)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              g1pbapnua = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              tmp = ((1. + nub)/mub)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              g1pnub = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              tmp = ((2 + nub)/mub)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              g2pnub = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              tmp = ((1. + bb + k + nub)/mub)
+              i = Int(dgami*(tmp))
+              del = tmp - dgam*i
+              g1pbbpk = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
+
+              delabk =  &
+                      &  (2.*(g1pnua/g2pnua)**ba*     &
+                      &    g1pbapnua*                                               &
+                      &    (g1pnub/g2pnub)**(bb + k)*                                &
+                      &    g1pbbpk)/                                                &
+                      &  (g1pnua*g1pnub)
+
+              RETURN
+          END Function delabk
 !
 !    !+---+-----------------------------------------------------------------+
 !
