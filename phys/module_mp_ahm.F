@@ -1413,7 +1413,7 @@ CONTAINS
       real :: faltndscc,faltndscr,faltndsci,faltndscs,faltndscg
 
       IF (IPELEC>0) THEN
-          ! INITIALIZW VALUES NEEDED FOR EXPLICIT LIGHTNING
+          ! INITIALIZE VALUES NEEDED FOR EXPLICIT LIGHTNING
 
           DTP = DT
           DTPINV = 1.D0/DTP
@@ -1606,6 +1606,7 @@ CONTAINS
                ci(i,k) = 0.0
                ani = 0.0
                cni = 0.0
+               an(i,1,k,lsc(li)) = 0.0
             END IF
             rni = (ani**2*cni)**(1./3.)
             ai(i,k) = nu*ni(i,k)*ani
@@ -1615,12 +1616,14 @@ CONTAINS
             IF(qc(i,k).lt.qsmall)THEN
                qc(i,k) = 0.
                nc(i,k) = 0.
+               an(i,1,k,lsc(lc)) = 0.0
             END IF
 
             !RAIN WATER
             IF(qr(i,k).lt.qsmall)THEN
                qr(i,k) = 0.
                nr(i,k) = 0.
+               an(i,1,k,lsc(lr)) = 0.0
             END IF
 
             !SNOW (AGGREGATES)
@@ -1646,6 +1649,7 @@ CONTAINS
                ans = 0.0
                cns = 0.0
                rns = 0.0
+               an(i,1,k,lsc(ls)) = 0.0
             END IF
             
 
@@ -1653,6 +1657,7 @@ CONTAINS
             IF(qg(i,k).lt.qsmall)THEN
                qg(i,k) = 0.
                ng(i,k) = 0.
+               an(i,1,k,lsc(lg)) = 0.0
             END IF
 !     initialize process rates
             mnuccd = 0.;mnuccr = 0.;mnuccc = 0.;mnucci = 0.
@@ -1920,6 +1925,8 @@ CONTAINS
                         temp=temp-qs(i,k)*xxlf/cpm
                         qs(i,k) = 0.0
                         ns(i,k) = 0.0
+                        an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(ls))
+                        an(i,1,k,lsc(ls)) = 0.0
                      ENDIF
                      
                      IF(qg(i,k).lt.1.e-6)THEN
@@ -1928,6 +1935,8 @@ CONTAINS
                         temp=temp-qg(i,k)*xxlf/cpm
                         qg(i,k) = 0.0
                         ng(i,k) = 0.0
+                        an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(lg))
+                        an(i,1,k,lsc(lg)) = 0.0
                      ENDIF
                   ENDIF
 !       recalculate rain distribution parameters if rain now exists
