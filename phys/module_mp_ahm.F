@@ -781,7 +781,7 @@ CONTAINS
          PRDGOUT2D, EPRDGOUT2D, EVPMGOUT2D, PGMLTOUT2D, QMULTGOUT2D,  &
          QMULTRGOUT2D, IMMERSION2D, PRAIOUT2D, CFRZR2D, QAGG2D, QNAGG2D,&
 !     ------------------------------   lightning   ------------------------------------
-                 an, elec2d, ipelec,&
+         an, elec2d, ipelec, j, &
                  t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
 !     ------------------------------ end lightning ------------------------------------
          )
@@ -1100,7 +1100,7 @@ CONTAINS
       piacrsout, pracisout, pracgout, psacwgout, pgsacwout,        &
       pgracsout, prdgout, eprdgout, evpmgout, pgmltout, qmultgout, &
       qmultrgout, immersion, praiout, cfrzr, qagg, qnagg, &
-      an, elec2d, ipelec,&
+      an, elec2d, ipelec, j,&
       t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
               )
 !****************************************************************************
@@ -1304,8 +1304,10 @@ CONTAINS
       real, dimension(its:ite,kts:kte), INTENT(INOUT) :: elec2d
       real, dimension(its:ite, 1, kts:kte), INTENT(INOUT) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
       INTEGER, INTENT(IN)  :: ipelec
+      INTEGER, INTENT(IN)  :: j
 
       ! constants
+      logical :: largeion = .false.   ! true: use large ion category
       REAL DIAG,DIAS,DIAI ! # WEIGHTED MEAN DIAMETER
       REAL VT ! RELATIVE FALL SPEED
       REAL ESICLSN,EHICLSN,EHSCLSN ! COLLISION EFFICIENCY
@@ -1544,6 +1546,13 @@ CONTAINS
           faltndsci = 0.0
           faltndscs = 0.0
           faltndscg = 0.0
+
+          CIONP = 0.0
+          CIONN = 0.0
+          CLIONP = 0.0
+          CLIONN = 0.0
+          CIONPMXD = 0.0
+          CIONNMXD = 0.0
 
           DUMSC = 0.0
 
@@ -2163,7 +2172,7 @@ CONTAINS
                   END IF
                   
                   
-               ELSE             !temp
+               ELSE             !temp separation
 !     autoconversion of cloud liquid water to rain
                   IF(RAINON.ge.1)THEN
                      IF(qc(i,k).ge.1.E-6)THEN
@@ -3558,6 +3567,39 @@ CONTAINS
 
                END IF
             END IF
+
+            ! ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
+            ! yc added 6/30/2022. for elec
+            IF (IPELEC>0) THEN
+                ! update an1d "q and n" part (C/m3 for charge)
+                an(i,1,k,lc) = qc(i,k) ! kg/kg
+                an(i,1,k,lr) = qr(i,k)
+                an(i,1,k,li) = qi(i,k)
+                an(i,1,k,ls) = qs(i,k)
+                an(i,1,k,lh) = qg(i,k)
+
+                an(i,1,k,lnc) = nc(i,k)*rho(i,k) ! #/m3 consistent w/ nssl
+                an(i,1,k,lnr) = nr(i,k)*rho(i,k)
+                an(i,1,k,lni) = ni(i,k)*rho(i,k)
+                an(i,1,k,lns) = ns(i,k)*rho(i,k)
+                an(i,1,k,lnh) = ng(i,k)*rho(i,k)
+
+                DO il = lc,lhab
+                    scx(i,k,il) = an(i,1,k,lsc(il))
+                    IF ( Abs(scx(i,k,il)) > 1000.e-9 ) THEN
+                    write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(i,k,il),an(i,1,k,il),an(i,1,k,ln(il))
+                    write(0,*) 'at it, ix,jy,kz = ',itimestep ,i, j, k
+                    STOP
+                    ENDIF
+                ENDDO
+                cionp(i,k) = an(i,1,k,lscpi) ! #/m3
+                cionn(i,k) = an(i,1,k,lscni)
+                if ( largeion ) then
+                    clionp(i,k) = an(i,1,k,lscpli)
+                    clionn(i,k) = an(i,1,k,lscnli)
+                end if
+            END IF ! IPELEC
+
             LTRUE = 1
 
  200        CONTINUE
