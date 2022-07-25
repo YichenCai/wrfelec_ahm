@@ -1310,6 +1310,7 @@ CONTAINS
       logical :: largeion = .false.   ! true: use large ion category
       REAL DIAG,DIAS,DIAI ! # WEIGHTED MEAN DIAMETER
       REAL VT ! RELATIVE FALL SPEED
+      REAL :: EHS_COLLSN = 0.5, EHI_COLLSN = 1.0, ESI_COLLSN = 1.0 ! MAX COLLISION EFFICIENCY
       REAL ESICLSN,EHICLSN,EHSCLSN ! COLLISION EFFICIENCY
       REAL BB_G,BB_I,BB_S
       REAL XNU_G,XNU_I,XNU_S
@@ -1326,13 +1327,15 @@ CONTAINS
       real mixedphasefac
       real qconkq,qconm,qconn,qsign,ftelwc,elecfac
       real cfce15,gf8,gf4i,gf3p5,gf1a,gf1p5,gf4p5
-      logical :: csi_morr = .True.
+      logical :: csi_flag = .True.
       real ni_elec
       real, parameter :: tfr = 273.15, thnuc = 235.15
       real    :: delqnia = -50.0e-14
       real    :: delqxia =  50.0e-14
       real    :: delqnsa = -50.0e-14
       real    :: delqxsa =  50.0e-14
+      integer, parameter :: icediaflag=4 ! ice diameter used for charging: =1 ani; =2 cni; =3 max axis; =4 rni
+      integer, parameter :: snowdiaflag=4
 
       ! tmps..
       REAL TMP, tmppre
@@ -1350,6 +1353,9 @@ CONTAINS
       integer idelq
 !      real :: scworig=0.0
       integer iltest
+      real lamselec,n0selec,anselec,cnselec,rhoselec,deltastrselec,rnselec
+      real lamgelec
+      real rhoielec,anielec,cnielec,rhobarelec,deltastrelec,rnielec
 
       REAL, DIMENSION(its:ite,kts:kte) ::   CSACI0 ! SNOW-ICE COLLISION RATE (#COLLI./M3/S)
       REAL, DIMENSION(its:ite,kts:kte) ::   CHACI0 ! GRAUP-ICE COLLISION RATE (#COLLI./M3/S)
@@ -3074,7 +3080,7 @@ CONTAINS
 
                      qi(i,k) = qi(i,k) - agg*dt/rho(i,k)
                      ni(i,k) = ni(i,k) - nagg*dt/rho(i,k)
-                   
+
                      qagg(i,k) = agg/rho(i,k)
                      qnagg(i,k) = nagg/rho(i,k)
   
@@ -3578,11 +3584,11 @@ CONTAINS
                 an(i,1,k,ls) = qs(i,k)
                 an(i,1,k,lh) = qg(i,k)
 
-                an(i,1,k,lnc) = nc(i,k)*rho(i,k) ! #/m3 consistent w/ nssl
-                an(i,1,k,lnr) = nr(i,k)*rho(i,k)
-                an(i,1,k,lni) = ni(i,k)*rho(i,k)
-                an(i,1,k,lns) = ns(i,k)*rho(i,k)
-                an(i,1,k,lnh) = ng(i,k)*rho(i,k)
+                an(i,1,k,lnc) = nc(i,k)
+                an(i,1,k,lnr) = nr(i,k)
+                an(i,1,k,lni) = ni(i,k)
+                an(i,1,k,lns) = ns(i,k)
+                an(i,1,k,lnh) = ng(i,k)
 
                 DO il = lc,lhab
                     scx(i,k,il) = an(i,1,k,lsc(il))
@@ -3598,6 +3604,107 @@ CONTAINS
                     clionp(i,k) = an(i,1,k,lscpli)
                     clionn(i,k) = an(i,1,k,lscnli)
                 end if
+
+                ! calculate size parameters
+                ! SNOW---------------------------------------------------------------------------------
+                IF(qs(i,k).ge.qsmall.and.ns(i,k).gt.qsmall)THEN
+                    if (snowflag.eq.1) then
+                        lamselec = (cons1*ns(i,k)/qs(i,k))**(1./DS)
+                        n0selec = ns(i,k)*lamselec
+                        ! only updating lams that is needed, in order not to change ns before it gets updated later
+                        IF(lamselec.lt.lammins)THEN
+                            lamselec = lammins
+                            n0selec = lamselec**4*qs(i,k)/cons1
+                            an(i,1,k,lns) = n0selec/lamselec
+                        ELSE IF(lamselec.gt.lammaxs)THEN
+                            lamselec = lammaxs
+                            n0selec = lamselec**4*qs(i,k)/cons1
+                            an(i,1,k,lns) = n0selec/lamselec
+                        END IF
+                        xdia(i,k,ls) = 1.0/lamselec
+                    else if (snowflag.eq.2) then
+                        anselec = as(i,k)/(nus*ns(i,k))
+                        cnselec = cs(i,k)/(nus*ns(i,k))
+                        if (snowdiaflag.eq.1) then
+                            xdia(i,k,ls) = 2.*anselec
+                        else if (snowdiaflag.eq.2) then
+                            xdia(i,k,ls) = 2.*cnselec
+                        else if (snowdiaflag.eq.3) then
+                            xdia(i,k,ls) = 2.*max(anselec,cnselec)
+                        else if (snowdiaflag.eq.4) then ! eq volumne radius
+                            rhoselec = rhos(i,k)
+                            deltastrselec = deltastrs
+                            CALL ICE_CHECKS(1,nus,an(i,1,k,lns),an(i,1,k,ls),anselec,cnselec,rnselec,deltastrselec,rhoselec,&
+                                    iaspect,sphrflag,redden)
+                            xdia(i,k,ls) = 2.*rnselec
+                        end if
+                    end if
+                END IF
+
+                ! GRAUPEL---------------------------------------------------------------------------------
+                if(qg(i,k).ge.qsmall)then
+                    ! only updating lamg that is needed, in order not to change ng before it gets updated later
+                    lamgelec = (cons2*ng(i,k)/qg(i,k))**(1./DG)
+                    !                    n0g = ng(i,k)*lamgelec
+                    if(lamgelec.lt.lamming)then
+                        lamgelec = lamming
+                        !                        n0g = lamgelec**4*qg(i,k)/cons2
+                        !                        ng(i,k) = n0g/lamgelec
+                    else if(lamgelec.gt.lammaxg)then
+                        lamgelec = lammaxg
+                        !                        n0g = lamgelec**4*qg(i,k)/cons2
+                        !                        ng(i,k) = n0g/lamgelec
+                    end if
+                    xdia(i,k,lg) = 1.0/lamgelec
+                end if
+
+                ! CLOUD DROPLET---------------------------------------------------------------------------------
+                IF(qc(i,k) .ge. qsmall)THEN ! here using number weighted
+                    xdia(i,k,lc) = (6/(PI*RHOW)*qc(i,k)/nc(i,k))**(1./3.)
+                    xdia(i,k,lc) = min(max(xdia(i,k,lc),1.E-6),60.E-6)
+                END IF
+
+                ! CLOUD ICE---------------------------------------------------------------------------------
+                IF(qi(i,k).gt.qsmall.and.ni(i,k).gt.qsmall) THEN
+                    if (sphrflag.eq.1) then
+                        rhoielec = 920.
+                        If(redden .eq. 1) rhoielec = 500.
+                        xdia(i,k,lc) = (6/(PI*rhoielec)*qi(i,k)/ni(i,k))**(1./3.)
+                        xdia(i,k,lc) = min(max(xdia(i,k,lc),1.E-6),(2.*125.E-6+100.E-6)) ! adapted from morr
+                    else
+                        anielec=ai(i,k)/(nu*ni(i,k))
+                        cnielec=ci(i,k)/(nu*ni(i,k))
+                        if (icediaflag.eq.1) then
+                            xdia(i,k,li) = 2.*anielec
+                        else if (icediaflag.eq.2) then
+                            xdia(i,k,li) = 2.*cnielec
+                        else if (icediaflag.eq.3) then
+                            xdia(i,k,li) = 2.* max(anielec,cnielec)
+                        else if (icediaflag.eq.4) then
+                            rhobarelec = rhobar
+                            deltastrelec = deltastr
+                            CALL ICE_CHECKS(1,nu,an(i,1,k,lni),an(i,1,k,li),anielec,cnielec,rnielec,deltastrelec,rhoielec,&
+                                    iaspect,sphrflag,redden)
+                            xdia(i,k,li) = 2.*rnielec
+                        end if
+                    end if
+                END IF
+
+                an(i,1,k,lnc) = an(i,1,k,lnc) * rho(i,k) ! #/m3 consistent w/ nssl
+                an(i,1,k,lnr) = an(i,1,k,lnr) * rho(i,k)
+                an(i,1,k,lni) = an(i,1,k,lni) * rho(i,k)
+                an(i,1,k,lns) = an(i,1,k,lns) * rho(i,k)
+                an(i,1,k,lnh) = an(i,1,k,lnh) * rho(i,k)
+
+                !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+                ! Collisional charging rates
+                ! Sticking eff. Collision eff assumed 1
+                exy(i,k,ls,lc) = eci ! 0.7
+                exy(i,k,ls,li) = 0.0 ! since no ice-snow collection considered
+                exy(i,k,lh,lc) = eci ! 0.7
+                exy(i,k,lh,li) = 0.0 ! since there is no graup-ice collection considered
+                exy(i,k,lh,ls) = 0.0 ! since there is no graup-snow collection considered
+
             END IF ! IPELEC
 
             LTRUE = 1
