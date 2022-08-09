@@ -1354,8 +1354,9 @@ CONTAINS
 !      real :: scworig=0.0
       integer iltest
       real lamselec,n0selec,anselec,cnselec,rhoselec,deltastrselec,rnselec
-      real lamgelec
+      real lamgelec,n0gelec
       real rhoielec,anielec,cnielec,rhobarelec,deltastrelec,rnielec
+      real fspeed
 
       REAL, DIMENSION(its:ite,kts:kte) ::   CSACI0 ! SNOW-ICE COLLISION RATE (#COLLI./M3/S)
       REAL, DIMENSION(its:ite,kts:kte) ::   CHACI0 ! GRAUP-ICE COLLISION RATE (#COLLI./M3/S)
@@ -1562,6 +1563,8 @@ CONTAINS
 
           DUMSC = 0.0
 
+          vtrms = 0.0
+          vtrmi1 = 0.0
       END IF !(IPELEC>0)
       !     ------------------------------ end lightning ------------------------------------
       resupply=0
@@ -3605,7 +3608,9 @@ CONTAINS
                     clionn(i,k) = an(i,1,k,lscnli)
                 end if
 
-                ! calculate size parameters
+
+                ! calculate size & fall speed
+                dum = (rhosu/rho(i,k))**0.54
                 ! SNOW---------------------------------------------------------------------------------
                 IF(qs(i,k).ge.qsmall.and.ns(i,k).gt.qsmall)THEN
                     if (snowflag.eq.1) then
@@ -3622,6 +3627,9 @@ CONTAINS
                             an(i,1,k,lns) = n0selec/lamselec
                         END IF
                         xdia(i,k,ls) = 1.0/lamselec
+
+                        fspeed = asn(k)*cons3/((cons1*ns(i,k)/qs(i,k))**(1./DS))**BS
+                        umx(i,k,ls) = min(fspeed,1.2*dum)
                     else if (snowflag.eq.2) then
                         anselec = as(i,k)/(nus*ns(i,k))
                         cnselec = cs(i,k)/(nus*ns(i,k))
@@ -3638,6 +3646,8 @@ CONTAINS
                                     iaspect,sphrflag,redden)
                             xdia(i,k,ls) = 2.*rnselec
                         end if
+
+                        umx(i,k,ls) = vtrms(i,k)
                     end if
                 END IF
 
@@ -3645,23 +3655,29 @@ CONTAINS
                 if(qg(i,k).ge.qsmall)then
                     ! only updating lamg that is needed, in order not to change ng before it gets updated later
                     lamgelec = (cons2*ng(i,k)/qg(i,k))**(1./DG)
-                    !                    n0g = ng(i,k)*lamgelec
+                    n0gelec = ng(i,k)*lamgelec
                     if(lamgelec.lt.lamming)then
                         lamgelec = lamming
-                        !                        n0g = lamgelec**4*qg(i,k)/cons2
-                        !                        ng(i,k) = n0g/lamgelec
+                        n0gelec = lamgelec**4*qg(i,k)/cons2
+                        an(i,1,k,lnh) = n0gelec/lamgelec
                     else if(lamgelec.gt.lammaxg)then
                         lamgelec = lammaxg
-                        !                        n0g = lamgelec**4*qg(i,k)/cons2
-                        !                        ng(i,k) = n0g/lamgelec
+                        n0gelec = lamgelec**4*qg(i,k)/cons2
+                        an(i,1,k,lnh) = n0gelec/lamgelec
                     end if
                     xdia(i,k,lg) = 1.0/lamgelec
+
+                    fspeed = agn(k)*cons7/(lamgelec**BG)
+                    umx(i,k,lh) = min(fspeed,20.*dum)
                 end if
 
                 ! CLOUD DROPLET---------------------------------------------------------------------------------
                 IF(qc(i,k) .ge. qsmall)THEN ! here using number weighted
                     xdia(i,k,lc) = (6/(PI*RHOW)*qc(i,k)/nc(i,k))**(1./3.)
                     xdia(i,k,lc) = min(max(xdia(i,k,lc),1.E-6),60.E-6)
+
+                    fspeed = acn(k)*GAMMA(4.+BC+PGAM)/(lamc**BC*GAMMA(PGAM+4.))
+                    umx(i,k,lc) = min(fspeed,9.1*dum)
                 END IF
 
                 ! CLOUD ICE---------------------------------------------------------------------------------
@@ -3688,6 +3704,8 @@ CONTAINS
                             xdia(i,k,li) = 2.*rnielec
                         end if
                     end if
+
+                    umx(i,k,li) = vtrmi1(i,k)
                 END IF
 
                 an(i,1,k,lnc) = an(i,1,k,lnc) * rho(i,k) ! #/m3 consistent w/ nssl
