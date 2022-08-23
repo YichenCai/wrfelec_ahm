@@ -1374,9 +1374,13 @@ CONTAINS
       real    :: delqxia =  50.0e-14
       real    :: delqnsa = -50.0e-14
       real    :: delqxsa =  50.0e-14
+      real    :: scwppmx = 20.0e-12
+      real    :: scippmx = 20.0e-12
       integer, parameter :: icediaflag=4 ! ice diameter used for charging: =1 ani; =2 cni; =3 max axis; =4 rni
       integer, parameter :: snowdiaflag=4
       real   :: ecollmx = 0.5 ! Maximum collision efficiency for graup/hail with ice; used only for charging rates
+      real :: scxacymax = 3000.e-12 ! Maximum charging rate magnitude (C s-1 m-3)
+
 
       ! tmps..
       REAL TMP, tmppre
@@ -1400,7 +1404,6 @@ CONTAINS
       real lamgelec,n0gelec
       real rhoielec,anielec,cnielec,rhobarelec,deltastrelec,rnielec
       real fspeed
-      real :: scxacymax = 3000.e-12 ! Maximum charging rate magnitude (C s-1 m-3)
 
       REAL, INTENT(INOUT), DIMENSION(its:ite,kts:kte) ::   CSACI0 ! SNOW-ICE COLLISION RATE (#COLLI./M3/S)
       REAL, INTENT(INOUT), DIMENSION(its:ite,kts:kte) ::   CHACI0 ! GRAUP-ICE COLLISION RATE (#COLLI./M3/S)
@@ -1436,25 +1439,25 @@ CONTAINS
       real :: fschw(its:ite,kts:kte)
 
       ! production of space charge term  + / -
-      real ::  psctot(its:ite,kts:kte)
-      real ::  psccwi(its:ite,kts:kte), psccwd(its:ite,kts:kte) ! cloud water
-      real ::  psccii(its:ite,kts:kte), psccid(its:ite,kts:kte) ! ice crystals
-      real ::  pscrwi(its:ite,kts:kte), pscrwd(its:ite,kts:kte) ! rain water
-      real ::  pscswi(its:ite,kts:kte), pscswd(its:ite,kts:kte) ! snow
-      real ::  pschwi(its:ite,kts:kte), pschwd(its:ite,kts:kte) ! graupel
+      real ::  psctot
+      real ::  psccwi, psccwd ! cloud water
+      real ::  psccii, psccid ! ice crystals
+      real ::  pscrwi, pscrwd ! rain water
+      real ::  pscswi, pscswd ! snow
+      real ::  pschwi, pschwd ! graupel
 
       ! production of space charge from mass transfer
-      real ::  psccwmi(its:ite,kts:kte), psccwmd(its:ite,kts:kte)
-      real ::  psccimi(its:ite,kts:kte), psccimd(its:ite,kts:kte)
-      real ::  pscrwmi(its:ite,kts:kte), pscrwmd(its:ite,kts:kte)
-      real ::  pscswmi(its:ite,kts:kte), pscswmd(its:ite,kts:kte)
-      real ::  pschwmi(its:ite,kts:kte), pschwmd(its:ite,kts:kte)
+      real ::  psccwmi, psccwmd
+      real ::  psccimi, psccimd
+      real ::  pscrwmi, pscrwmd
+      real ::  pscswmi, pscswmd
+      real ::  pschwmi, pschwmd
 
       ! ions: assume mass = 0
-      real ::  pscpii(its:ite,kts:kte), pscpid(its:ite,kts:kte) !positive ions
-      real ::  pscnii(its:ite,kts:kte), pscnid(its:ite,kts:kte) !negative ions
-      real ::  pscplii(its:ite,kts:kte), pscplid(its:ite,kts:kte) !positive (large) ions
-      real ::  pscnlii(its:ite,kts:kte), pscnlid(its:ite,kts:kte) !negative (large) ions
+      real ::  pscpii, pscpid !positive ions
+      real ::  pscnii, pscnid !negative ions
+      real ::  pscplii, pscplid !positive (large) ions
+      real ::  pscnlii, pscnlid !negative (large) ions
 
       ! sedimentation rates
       real ::  pscc_sed(kts:kte)
@@ -3942,6 +3945,125 @@ CONTAINS
                     scxacy(i,k,:,:)=0.0
                 END IF ! x boundary check
 
+                !!
+                !!
+                !! Collisional Charging transfers (inductive/noninductive)
+                !!
+                !!
+                !
+                !  cloud water
+                !
+                psccwi =    max(-schacw(i,k),0.0)   &
+                        & + max(-scsacw(i,k),0.0)
+                psccwd =    min(-schacw(i,k),0.0)   &
+                        & + min(-scsacw(i,k),0.0)
+
+                qcwtmp = Max(0.0, an(i,1,k,lc))
+                IF ( qcwtmp .gt. qxmin(lc) ) then
+                    ccwtmp = Max(0.001, an(i,1,k,lnc))
+                    cpqc = (scx(i,k,lc) + dtp*(psccwi+psccwd + psccwmi+psccwmd)) &
+                            /ccwtmp
+                    IF ( Abs(cpqc) .gt. scwppmx .and.   &
+                            & (psccwi+psccwd) .ne. 0.0 .and.   &
+                            & Sign(1.0, scx(i,k,lc)) .eq.   &
+                                    & Sign(1.0, (psccwi+psccwd))) THEN
+                        cpqc0 = Sign(scwppmx,cpqc)
+                        scfac = (cpqc0*ccwtmp - scx(i,k,lc) -   &
+                                &       dtp*(psccwmi+psccwmd))/   &
+                                &              ( dtp*(psccwi+psccwd) )
+                        IF ( scfac .gt. 1.0 ) THEN
+                            write(0,*) 'OUCH: scwfac = ',scfac
+                            write(0,*) 'OUCH: scwfac = ',scfac
+                        ENDIF
+                        scfac = Max(scfac,0.0)
+                        scfac = Min(scfac,1.0)
+                    ELSE
+                        scfac = 1.0
+                    ENDIF
+                ELSE
+                    scfac = 0.0
+                ENDIF ! ( qcwtmp .gt. qxmin(lc) )
+
+                IF ( scfac .lt. 1.0 .and. an(i,1,k,lc) .gt. qxmin(lc) ) THEN
+                    schacw(i,k) = scfac*schacw(i,k)
+                    scsacw(i,k) = scfac*scsacw(i,k)
+                    psccwi =  max(-schacw(i,k),0.0)   &
+                          & + max(-scsacw(i,k),0.0)
+                    psccwd =  min(-schacw(i,k),0.0)   &
+                          & + min(-scsacw(i,k),0.0)
+                ENDIF
+
+                !
+                !  cloud ice
+                !
+                psccii =    max(-schaci(i,k),0.0)   &
+                        & + max(-scsaci(i,k),0.0)
+                psccid =    min(-schaci(i,k),0.0)   &
+                        & + min(-scsaci(i,k),0.0)
+
+                qcitmp = Max(0.0, an(i,1,k,li))
+                IF ( qcitmp .gt. qxmin(li) ) then
+                    ccitmp = Max(0.001, an(i,1,k,lni) )
+                    cpci = (scx(i,k,li) + dtp*(psccii+psccid + psccimi+psccimd)) &
+                            /ccitmp
+                    IF ( Abs(cpci) .gt. scippmx .and.   &
+                            & (psccii+psccid ) .ne. 0.0 .and.   &
+                            & Sign(1.0,scx(i,k,li)) .eq.   &
+                                    & Sign(1.0,(psccii+psccid))) THEN
+                        cpci0 = Sign(scippmx,cpci)
+                        scfac = (cpci0*ccitmp - scx(i,k,li) -    &
+                                &       dtp*(psccimi+psccimd))/   &
+                                &              ( dtp*(psccii+psccid) )
+                        IF ( scfac .gt. 1.0 ) THEN
+                            write(0,*) 'OUCH: sccifac = ',scfac,   &
+                                    & dtp*(psccimi+psccimd),cpci,scx(i,k,li),ccitmp,   &
+                                    & i,j,k,t(i,k)
+                        ENDIF
+                        scfac = Max(scfac,0.0)
+                        scfac = Min(scfac,1.0)
+                    ELSE
+                        scfac = 1.0
+                    ENDIF
+                ELSE
+                    scfac = 0.0
+                ENDIF ! ( qcitmp .gt. qxmin(li) )
+
+                IF ( scfac .lt. 1.0 ) THEN
+                    schaci(i,k) = scfac*schaci(i,k)
+                    scsaci(i,k) = scfac*scsaci(i,k)
+                    psccii =    max(-schaci(i,k),0.0)   &
+                            & + max(-scsaci(i,k),0.0)
+                    psccid =    min(-schaci(i,k),0.0)   &
+                            & + min(-scsaci(i,k),0.0)
+                ENDIF
+
+                !
+                !  rain
+                !
+!                pscrwi = max(-scsacr(i,k),0.0)
+!                pscrwd = min(-scsacr(i,k),0.0)
+
+                !
+                !  snow
+                !
+                pscswi =    max(scsaci(i,k),0.0)   &
+                        & + max(scsacw(i,k),0.0)   &
+                        & + max(-schacs(i,k),0.0)
+                pscswd =    min(scsaci(i,k),0.0)   &
+                        & + min(scsacw(i,k),0.0)   &
+                        & + min(-schacs(i,k),0.0)
+
+                !
+                !  graupel
+                !
+                pschwi =  pschwi   &
+                        & + max(schaci(i,k),0.0)   &
+                        & + max(schacs(i,k),0.0)   &
+                        & + max(schacw(i,k),0.0)
+                pschwd =  pschwd   &
+                        & + min(schaci(i,k),0.0)   &
+                        & + min(schacs(i,k),0.0)   &
+                        & + min(schacw(i,k),0.0)
 
             END IF ! IPELEC
 
