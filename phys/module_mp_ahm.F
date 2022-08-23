@@ -29,7 +29,7 @@
       PRIVATE :: GET_X
       PRIVATE :: CAPACITANCE_GAMMA
       PRIVATE :: AHM_MICRO
-!      PRIVATE :: DELBK, DELABK, GAMMA_DP
+      PRIVATE :: DELBK, DELABK, gamma_dp
 
       REAL, PRIVATE ::  rhoi    !BULK DENSITY OF CLOUD ICE
       REAL, PRIVATE ::  nu      !DISTRIBUTION SHAPE FACTOR
@@ -406,6 +406,7 @@ CONTAINS
               ,SCS                            & !
               ,SCH                            & !
       ,SCTOT                          & !
+      ,csaci03d, chaci03d, chacs03d   & !
       ,NONINDUC                       & ! A
       ,rscghis_2d                     & ! D
       ,INDUC                          & ! D
@@ -525,7 +526,8 @@ CONTAINS
 !                ------------------------------ explicite lightning ------------------------------
 !                ---------------------------------------------------------------------------------
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
-              scr,scw,sci,scs,sch,sctot,scion,sciona
+              scr,scw,sci,scs,sch,sctot,scion,sciona &
+              ,csaci03d, chaci03d, chacs03d
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
               noninduc,induc,elec
       real, dimension(ims:ime , jms:jme),  optional, intent(inout)::  &
@@ -542,6 +544,7 @@ CONTAINS
       real, dimension(its:ite, 1, kts:kte) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d, t9
       real, dimension(its:ite, 1, kts:kte) :: dz2d
       real, dimension(its:ite,kts:kte) :: elec2d
+      real, dimension(its:ite,kts:kte) :: csaci02d, chaci02d, chacs02d
 
       real :: tmp_elec, dv
       integer :: nx,ny,nz
@@ -612,6 +615,13 @@ CONTAINS
           t5_2d = 0.0
           t6_2d = 0.0
           t8_2d = 0.0
+
+          csaci03d = 0.0
+          chaci03d = 0.0
+          chacs03d = 0.0
+          csaci02d = 0.0
+          chaci02d = 0.0
+          chacs02d = 0.0
       END IF
 !                ------------------------------ end lightning ------------------------------------
 !                ---------------------------------------------------------------------------------
@@ -783,6 +793,7 @@ CONTAINS
 !     ------------------------------   lightning   ------------------------------------
          an, elec2d, ipelec, j, &
                  t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
+         ,CSACI02d,CHACI02d,CHACS02d &
 !     ------------------------------ end lightning ------------------------------------
          )
 !     ------------------------------   LIGHTNING --------------------------------------
@@ -855,6 +866,9 @@ CONTAINS
                                         +scs(its:ite,kts:kte,j) &
                                         +sch(its:ite,kts:kte,j) &
                                         +sciona(its:ite,kts:kte,j) ! to get C/m3 for RHS calc later on
+             csaci03d(its:ite,kts:kte,j) = csaci02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
+             chaci03d(its:ite,kts:kte,j) = chaci02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
+             chacs03d(its:ite,kts:kte,j) = chacs02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
 
              DO i = its,ite
                  IF ( i.le.(ids+2) .or. i.ge.(ide-2)  ) THEN
@@ -865,6 +879,9 @@ CONTAINS
                          scs(i,kts:kte,j) = 0.
                          sch(i,kts:kte,j) = 0.
                          sctot(i,kts:kte,j) = 0.
+                         csaci03d(i,kts:kte,j) = 0.
+                         chaci03d(i,kts:kte,j) = 0.
+                         chacs03d(i,kts:kte,j) = 0.
                      ENDIF
                  endif
              enddo
@@ -1102,6 +1119,7 @@ CONTAINS
       qmultrgout, immersion, praiout, cfrzr, qagg, qnagg, &
       an, elec2d, ipelec, j,&
       t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
+      ,CSACI0,CHACI0,CHACS0 &
               )
 !****************************************************************************
 
@@ -1358,9 +1376,9 @@ CONTAINS
       real rhoielec,anielec,cnielec,rhobarelec,deltastrelec,rnielec
       real fspeed
 
-      REAL, DIMENSION(its:ite,kts:kte) ::   CSACI0 ! SNOW-ICE COLLISION RATE (#COLLI./M3/S)
-      REAL, DIMENSION(its:ite,kts:kte) ::   CHACI0 ! GRAUP-ICE COLLISION RATE (#COLLI./M3/S)
-      REAL, DIMENSION(its:ite,kts:kte) ::   CHACS0 ! GRAUP-SNOW COLLISION RATE (#COLLI./M3/S)
+      REAL, INTENT(INOUT), DIMENSION(its:ite,kts:kte) ::   CSACI0 ! SNOW-ICE COLLISION RATE (#COLLI./M3/S)
+      REAL, INTENT(INOUT), DIMENSION(its:ite,kts:kte) ::   CHACI0 ! GRAUP-ICE COLLISION RATE (#COLLI./M3/S)
+      REAL, INTENT(INOUT), DIMENSION(its:ite,kts:kte) ::   CHACS0 ! GRAUP-SNOW COLLISION RATE (#COLLI./M3/S)
       ! csaci0_morr is simply 9 times NPRAI for now, since eii=0.1
       REAL, DIMENSION(its:ite,kts:kte) ::   csaci0_morr ! SNOW-ICE COLLISION RATE, morr (#COLLI./kg/S)
       REAL, DIMENSION(its:ite,kts:kte, lscw:lsch) :: DUMSC ! for use in sedimentation
@@ -1447,6 +1465,8 @@ CONTAINS
           gf4p5 = 11.63172839656745 ! gamma(4.0+0.5)
           gf3p5 = 3.32335097 ! gamma(3.5)
           gf1p5 = 0.8862269255  ! gamma(1.5)
+          print*, 'DA0LH,DA0LI,DA0LS',DA0LH,DA0LI,DA0LS
+          print*, 'DAB0LH_IH,DAB0LH_SH',DAB0LH_IH,DAB0LH_SH
 
           DO i = its,ite
               DO k = kts,kte
@@ -3580,7 +3600,7 @@ CONTAINS
             ! ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
             ! yc added 6/30/2022. for elec
             IF (IPELEC>0) THEN
-                ! update an1d "q and n" part (C/m3 for charge)
+                ! update an "q and n" part (C/m3 for charge)
                 an(i,1,k,lc) = qc(i,k) ! kg/kg
                 an(i,1,k,lr) = qr(i,k)
                 an(i,1,k,li) = qi(i,k)
@@ -3652,7 +3672,7 @@ CONTAINS
                 END IF
 
                 ! GRAUPEL---------------------------------------------------------------------------------
-                if(qg(i,k).ge.qsmall)then
+                if(qg(i,k).ge.qsmall .and. ng(i,k).ge.qsmall)then
                     ! only updating lamg that is needed, in order not to change ng before it gets updated later
                     lamgelec = (cons2*ng(i,k)/qg(i,k))**(1./DG)
                     n0gelec = ng(i,k)*lamgelec
@@ -3665,14 +3685,31 @@ CONTAINS
                         n0gelec = lamgelec**4*qg(i,k)/cons2
                         an(i,1,k,lnh) = n0gelec/lamgelec
                     end if
-                    xdia(i,k,lg) = 1.0/lamgelec
+                    xdia(i,k,lh) = 1.0/lamgelec
 
                     fspeed = agn(k)*cons7/(lamgelec**BG)
                     umx(i,k,lh) = min(fspeed,20.*dum)
                 end if
 
                 ! CLOUD DROPLET---------------------------------------------------------------------------------
-                IF(qc(i,k) .ge. qsmall)THEN ! here using number weighted
+                IF(qc(i,k).ge.qsmall .and. nc(i,k).ge.qsmall)THEN ! here using number weighted
+                    pgam = 0.0005714*(nc(i,k)/1.e6* (press/(287.15*temp)) )+0.2714
+                    pgam = 1./(pgam**2)-1.
+                    pgam = min(max(pgam,2.),10.)
+                    lamc = (cons26*nc(i,k)*GAMMA(pgam+4.)/&
+                                (qc(i,k)*GAMMA(pgam+1.)))**(1./3.)
+                    lammin = (pgam+1.)/60.e-6
+                    lammax = (pgam+1.)/1.e-6
+                    IF(lamc.lt.lammin)THEN
+                        lamc = lammin
+                        an(i,1,k,lnc) = exp(3.*log(lamc)+log(qc(i,k))+&
+                                log(GAMMA(pgam+1.))-log(GAMMA(pgam+4.)))/cons26
+                    ELSE IF(lamc.gt.lammax)THEN
+                        lamc = lammax
+                        an(i,1,k,lnc) = exp(3.*log(lamc)+log(qc(i,k))+&
+                                log(GAMMA(pgam+1.))-log(GAMMA(pgam+4.)))/cons26
+                    END IF
+
                     xdia(i,k,lc) = (6/(PI*RHOW)*qc(i,k)/nc(i,k))**(1./3.)
                     xdia(i,k,lc) = min(max(xdia(i,k,lc),1.E-6),60.E-6)
 
@@ -3715,13 +3752,76 @@ CONTAINS
                 an(i,1,k,lnh) = an(i,1,k,lnh) * rho(i,k)
 
                 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+                ! Collision rate of snow - ice (CSACI0: #/m3/s)
+                IF (an(i,1,k,ls).gt.qsmall.and.an(i,1,k,lns).gt.qsmall .and. &
+                    an(i,1,k,li).ge.qsmall.and.an(i,1,k,lni).gt.qsmall) THEN
+                    if (snowflag.eq.1) then
+                        csaci0(i,k) = pi/4.*gamma(bs+3.)*asn(k)*an(i,1,k,lni)*n0selec/lamselec**(bs+3.)*rho(i,k) ! same eq as for nprai except no eii
+                    else if (snowflag.eq.2) then
+                        csaci0(i,k) = pi/4.*xdia(i,k,ls)*umx(i,k,ls)*an(i,1,k,lni)*an(i,1,k,lns)
+                    end if
+                END IF
+
+                !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+                ! Collision rate of graupel-ice (CHACI0)
+                IF (an(i,1,k,lh).gt.qsmall.and.an(i,1,k,lnh).gt.qsmall .and. &
+                    an(i,1,k,li).gt.qsmall.and.an(i,1,k,lni).gt.qsmall) THEN
+                    vt = sqrt((umx(i,k,lh)-umx(i,k,li))**2 + 0.04*umx(i,k,lh)*umx(i,k,li))
+                    EHICLSN = EHI_COLLSN ! Graupel-ice collision efficiency, currently used as constant 1.
+                    CHACI0(i,K) = 0.25 * PI * EHICLSN * &
+                            (an(i,1,k,lnh)) * (an(i,1,k,lni)) * VT * &
+                            (DA0LH * xdia(i,k,lh)**2 + &
+                                    DAB0LH_IH * xdia(i,k,lh) * xdia(i,k,li) + &
+                                    DA0LI * xdia(i,k,li)**2)
+                    if (i>300.and.i<310.and.j>40.and.j<50 .and.itimestep.gt.800) then
+                        write(0,*) 'at it, ix,jy,kz = ',itimestep ,i, j, k
+                        write(0,*) 'CHACI0(i,K)',CHACI0(i,K)
+                        write(0,*) '0.25 * PI * EHICLSN',0.25 * PI * EHICLSN
+                        write(0,*) 'an(i,1,k,lnh),an(i,1,k,lni)', (an(i,1,k,lnh)), (an(i,1,k,lni))
+                        write(0,*) 'an(i,1,k,lh),an(i,1,k,li)', (an(i,1,k,lh)), (an(i,1,k,li))
+                        write(0,*) 'vt, umx(i,k,lh),umx(i,k,li)',vt, umx(i,k,lh),umx(i,k,li)
+                        write(0,*) 'DA0LH, DAB0LH_IH, DA0LI', DA0LH, DAB0LH_IH, DA0LI
+                        write(0,*) 'xdia(i,k,lh), xdia(i,k,li)', xdia(i,k,lh), xdia(i,k,li)
+                    end if
+                END IF
+
+                !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+                ! Collision rate of graupel-snow (CHACS0)
+                IF (an(i,1,k,lh).gt.qsmall.and.an(i,1,k,lnh).gt.qsmall .and. &
+                    an(i,1,k,ls).ge.qsmall.and.an(i,1,k,lns).gt.qsmall) THEN
+                    vt = sqrt((umx(i,k,lh)-umx(i,k,ls))**2 + 0.04*umx(i,k,lh)*umx(i,k,ls))
+
+                    ! Graupel-snow collision efficiency.
+                    ! Defined as a linear function of snow size.
+                    ! Zero at Ds<=40um, 0.5 at Ds>=150um
+                    EHSCLSN = EHS_COLLSN
+                    IF ( xdia(i,k,ls) < 40.E-6 ) THEN
+                        EHSCLSN = 0.0
+                    ELSEIF ( xdia(i,k,ls) < 150.E-6 ) THEN
+                        EHSCLSN =  EHS_COLLSN*(xdia(i,k,ls) - 40.E-6)/(150.E-6 - 40.E-6)
+                    ELSE
+                        EHSCLSN = EHS_COLLSN
+                    ENDIF
+
+                    CHACS0(i,K) = 0.25 * PI * EHSCLSN * &
+                            (an(i,1,k,lnh)) * (an(i,1,k,lns)) * VT * &
+                            (DA0LH * xdia(i,k,lh)**2 + &
+                                    DAB0LH_SH * xdia(i,k,lh) * xdia(i,k,ls) + &
+                                    DA0LS * xdia(i,k,ls)**2)
+                END IF
+
+                cxacy(i,k,ls,li) = csaci0(i,k)
+                cxacy(i,k,lh,li) = chaci0(i,k)
+                cxacy(i,k,lh,ls) = chacs0(i,k)
+
+                !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
                 ! Collisional charging rates
                 ! Sticking eff. Collision eff assumed 1
                 exy(i,k,ls,lc) = eci ! 0.7
                 exy(i,k,ls,li) = 0.0 ! since no ice-snow collection considered
                 exy(i,k,lh,lc) = eci ! 0.7
-                exy(i,k,lh,li) = 0.0 ! since there is no graup-ice collection considered
-                exy(i,k,lh,ls) = 0.0 ! since there is no graup-snow collection considered
+                exy(i,k,lh,li) = 0.0 ! since no graup-ice collection considered
+                exy(i,k,lh,ls) = 0.0 ! since no graup-snow collection considered
 
             END IF ! IPELEC
 
@@ -6147,15 +6247,22 @@ CONTAINS
               implicit none
               real delbk
               real nu, mu, bb
-              integer k
+        integer k, igam
         integer ngm0,ngm1,ngm2
         parameter (ngm0=3001,ngm1=500,ngm2=500)
         double precision, parameter :: dgam = 0.01, dgami = 100.
+        double precision :: arg
         double precision gmoi(0:ngm0) ! ,gmod(0:ngm1,0:ngm2),gmdi(0:ngm1,0:ngm2)
 
               real tmp, del
               real x1, x2, x3, x4
               integer i
+
+        gmoi(0) = 1.d32
+        do igam = 1,ngm0
+            arg = dgam*igam
+            gmoi(igam) = gamma_dp(arg)
+        end do
 
               tmp = ((1.0 + nu)/mu)
               i = Int(dgami*(tmp))
@@ -6190,7 +6297,7 @@ CONTAINS
               implicit none
               real delabk
               real nua, mua, ba
-              integer k
+        integer k, igam
               real nub, mub, bb
 
               integer i
@@ -6201,7 +6308,14 @@ CONTAINS
         integer ngm0,ngm1,ngm2
         parameter (ngm0=3001,ngm1=500,ngm2=500)
         double precision, parameter :: dgam = 0.01, dgami = 100.
+        double precision :: arg
         double precision gmoi(0:ngm0) ! ,gmod(0:ngm1,0:ngm2),gmdi(0:ngm1,0:ngm2)
+
+        gmoi(0) = 1.d32
+        do igam = 1,ngm0
+            arg = dgam*igam
+            gmoi(igam) = gamma_dp(arg)
+        end do
 
               tmp = (1. + nua)/mua
               i = Int(dgami*(tmp))
@@ -6250,37 +6364,37 @@ CONTAINS
 !
 !    !+---+-----------------------------------------------------------------+
 !
-!    DOUBLE PRECISION FUNCTION GAMMA_DP(xx)
-!
-!        implicit none
-!        double precision xx
-!        integer j
-!
-!        ! Double precision ser,stp,tmp,x,y,cof(6)
-!
-!        real*8 ser,stp,tmp,x,y,cof(6)
-!        SAVE cof,stp
-!        DATA cof,stp/76.18009172947146d+0,  &
-!                &            -86.50532032941677d0,   &
-!                &             24.01409824083091d0,   &
-!                &             -1.231739572450155d0,  &
-!                &              0.1208650973866179d-2,&
-!                &             -0.5395239384953d-5,   &
-!                &              2.5066282746310005d0/
-!
-!        x = xx
-!        y = x
-!        tmp = x + 5.5d0
-!        tmp = (x + 0.5d0)*Log(tmp) - tmp
-!        ser = 1.000000000190015d0
-!        DO j=1,6
-!            y = y + 1.0d0
-!            ser = ser + cof(j)/y
-!        END DO
-!        gamma_dp = Exp(tmp + log(stp*ser/x))
-!
-!        RETURN
-!    END function gamma_dp
+    DOUBLE PRECISION FUNCTION GAMMA_DP(xx)
+
+        implicit none
+        double precision xx
+        integer j
+
+        ! Double precision ser,stp,tmp,x,y,cof(6)
+
+        real*8 ser,stp,tmp,x,y,cof(6)
+        SAVE cof,stp
+        DATA cof,stp/76.18009172947146d+0,  &
+                &            -86.50532032941677d0,   &
+                &             24.01409824083091d0,   &
+                &             -1.231739572450155d0,  &
+                &              0.1208650973866179d-2,&
+                &             -0.5395239384953d-5,   &
+                &              2.5066282746310005d0/
+
+        x = xx
+        y = x
+        tmp = x + 5.5d0
+        tmp = (x + 0.5d0)*Log(tmp) - tmp
+        ser = 1.000000000190015d0
+        DO j=1,6
+            y = y + 1.0d0
+            ser = ser + cof(j)/y
+        END DO
+        gamma_dp = Exp(tmp + log(stp*ser/x))
+
+        RETURN
+    END function gamma_dp
 
 !    ! ####################################################################
 !    !                SUBROUTINE TAKAX

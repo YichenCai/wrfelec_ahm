@@ -1787,6 +1787,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   ,SCS=scs                            & !
                   ,SCH=sch                            & !
                   ,SCTOT=sctot                        & !
+                  ,CSACI03D = csaci03d                &
+                  ,CHACI03D = chaci03d                &
+                  ,CHACS03D = chacs03d                &
                   ,NONINDUC = noninduc                & ! A
                   ,rscghis_2d = rscghis_2d            & ! D
                   ,INDUC = induc                      & ! D
