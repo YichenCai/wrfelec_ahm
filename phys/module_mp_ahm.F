@@ -4065,7 +4065,91 @@ CONTAINS
                         & + min(schacs(i,k),0.0)   &
                         & + min(schacw(i,k),0.0)
 
+                ! update scx array
+                scx(i,k,lc) = scx(i,k,lc) +   &
+                        &   dt*(psccwi + psccwd + psccwmi + psccwmd + pscc_sed(k))
+                scx(i,k,li) = scx(i,k,li) +   &
+                        &   dt*(psccii + psccid + psccimi + psccimd + psci_sed(k))
+                scx(i,k,lr) = scx(i,k,lr) +   &
+                        &   dt*(pscrwi + pscrwd + pscrwmi + pscrwmd + pscr_sed(k))
+                scx(i,k,ls) = scx(i,k,ls) +   &
+                        &   dt*(pscswi + pscswd + pscswmi + pscswmd + pscs_sed(k))
+                scx(i,k,lh) = scx(i,k,lh) +   &
+                        &   dt*(pschwi + pschwd + pschwmi + pschwmd + pscg_sed(k))
+
+                cionp(i,k) = cionp(i,k) +  &
+                        &   dt*ec_i*(pscpii + pscpid) ! #/m3 * C / C/m3. ! each ion has electron charge
+                cionn(i,k) = cionn(i,k) -  &
+                        &   dt*ec_i*(pscnii + pscnid)
+                if ( largeion ) then
+                    clionp(i,k) = clionp(i,k) +  &
+                            &   dt*ec_i*(pscplii + pscplid)
+                    clionn(i,k) = clionn(i,k) -  &
+                            &   dt*ec_i*(pscnlii + pscnlid)
+                endif
+
+                do iltest=lc,lh
+                    if (isnan(scx(i,k,iltest))) then
+                        write (0,*) 'scx=nan, iltest=',iltest
+                        write (0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write (0,*) 'scx(k,iltest)=',scx(i,k,iltest)
+                        write (0,*) 'psccwi psccwd psccwmi psccwmd pscc_sed(k)'
+                        write (0,*) psccwi, psccwd, psccwmi, psccwmd, pscc_sed(k)
+                        write (0,*) 'psccii psccid psccimi psccimd psci_sed(k)'
+                        write (0,*) psccii, psccid, psccimi, psccimd, psci_sed(k)
+                        write (0,*) 'pscrwi pscrwd pscrwmi pscrwmd pscr_sed(k'
+                        write (0,*) pscrwi, pscrwd, pscrwmi, pscrwmd, pscr_sed(k)
+                        write (0,*) 'pscswi pscswd pscswmi pscswmd pscs_sed(k'
+                        write (0,*) pscswi, pscswd, pscswmi, pscswmd, pscs_sed(k)
+                        write (0,*) 'pschwi pschwd pschwmi pschwmd pscg_sed(k'
+                        write (0,*) pschwi, pschwd, pschwmi, pschwmd, pscg_sed(k)
+                        write (0,*) 'stopping'
+                        print*, 'stopping'
+                        STOP
+                    end if
+                end do
+
+                ! put scx arrays back into an array
+                an(i,1,k,lscpi) = cionp(i,k)
+                an(i,1,k,lscni) = cionn(i,k)
+
+                DO il = lc,lhab
+                    tmp = an(i,1,k,lsc(il))
+                    an(i,1,k,lsc(il)) = scx(i,k,il)
+                    IF (.not.( Abs (scx(i,k,il) ) < 1000.e-9  )) THEN
+                        write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(i,k,il)
+                        write(0,*) 'Problem2 with scx il = ',tmp,tmp-scx(i,k,il),(tmp-scx(i,k,il))*dtpinv
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'qx,cx = ',an(i,1,k,il),an(i,1,k,ln(il))
+                        write(0,*)  psccwi, psccwd
+                        write(0,*)  psccii, psccid
+                        write(0,*)  pscrwi, pscrwd
+                        write(0,*)  pscswi, pscswd
+                        write(0,*)  pschwi, pschwd
+
+                        write(0,*)  pscpii ,pscpid
+                        write(0,*)  pscnii ,pscnid
+                        write(0,*)
+                        write(0,*)  psccwmi, psccwmd
+                        write(0,*)  psccimi, psccimd
+                        write(0,*)  pscrwmi, pscrwmd
+                        write(0,*)  pscswmi, pscswmd
+                        write(0,*)  pschwmi, pschwmd
+                        write(0,*)
+                        write(0,*)  pscc_sed(k)
+                        write(0,*)  psci_sed(k)
+                        write(0,*)  pscr_sed(k)
+                        write(0,*)  pscs_sed(k)
+                        write(0,*)  pscg_sed(k)
+
+                        stop
+                    ENDIF
+                ENDDO
+
             END IF ! IPELEC
+            ! end charging
+            ! ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
 
             LTRUE = 1
 
