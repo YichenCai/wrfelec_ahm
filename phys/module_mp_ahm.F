@@ -3322,7 +3322,7 @@ CONTAINS
                         !.. Small masses of leftover snow can become rain
                         if(qs(i,k).le.QSMALL) then
                            qr(i,k) = qr(i,k) + qs(i,k)
-                           qi(i,k)=0.
+                           qs(i,k)=0.
                         endif
 
                         IF(qs(i,k).gt.QSMALL)THEN
@@ -3511,7 +3511,9 @@ CONTAINS
             qg(i,k) = qg(i,k) + &
                       (pgmlt+evpmg-pracg)*dt + &
                       (pracg1+psacwg+pgsacw+pgracs+prdg+&
-                      eprdg+piacr+psacr)*dt
+                      eprdg+piacr+psacr &
+                              +praci & ! yc added 6/22/2022
+                              )*dt
             ng(i,k) = ng(i,k) + &
                       (ngmltg)*dt + &
                       (nscng+ngracs+niacr+nsubg)*dt
