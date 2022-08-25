@@ -1432,11 +1432,11 @@ CONTAINS
       real :: scxacy(its:ite,kts:kte,ls:lhab,lc:ls)
 
       ! charge per kg hdmt
-      real :: fscrw(its:ite,kts:kte)
-      real :: fsccw(its:ite,kts:kte)
-      real :: fscci(its:ite,kts:kte)
-      real :: fscsw(its:ite,kts:kte)
-      real :: fschw(its:ite,kts:kte)
+      real :: fscrw
+      real :: fsccw
+      real :: fscci
+      real :: fscsw
+      real :: fschw
 
       ! production of space charge term  + / -
       real ::  psctot
@@ -1627,7 +1627,7 @@ CONTAINS
       sphrflag   = 0            !all ice assumed spheres
       redden     = 0            !reduces density of spheres
       homofreeze = 1            !homogeneous freezing
-      snowflag  = 2             !ice --> snow & aggregation
+      snowflag  = 1             !ice --> snow & aggregation
       meltflag = 1              !1 Jensen_Ishmael melting scheme, o/w instantaneous
       effflag = 1               !1 for ice-ice agg efficiency from connolly et al 2012
       SEDON      = 1            !sedimentation
@@ -3945,6 +3945,89 @@ CONTAINS
                     scxacy(i,k,:,:)=0.0
                 END IF ! x boundary check
 
+                !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+                ! Charge per hydrometeor content
+                if ( ipelec .ge. 1) then
+                    if ( an(i,1,k,lr) .gt. qxmin(lr) ) then
+                        fscrw = scx(i,k,lr)/an(i,1,k,lr)
+                    end if
+                    if ( an(i,1,k,lc) .gt. qxmin(lc) ) then
+                        fsccw = scx(i,k,lc)/an(i,1,k,lc)
+                    end if
+                    if ( an(i,1,k,li) .gt. qxmin(li) ) then
+                        fscci = scx(i,k,li)/an(i,1,k,li)
+                    end if
+                    if ( an(i,1,k,ls) .gt. qxmin(ls) ) then
+                        fscsw = scx(i,k,ls)/an(i,1,k,ls)
+                    end if
+                    if ( an(i,1,k,lh) .gt. qxmin(lh) ) then
+                        fschw = scx(i,k,lh)/an(i,1,k,lh)
+                    end if
+                end if
+                ! il5 =0, warm; =1, frozen
+                il5 = 0
+                if ( t(i,k) .lt. 273.15 ) then
+                    il5 = 1
+                end if
+
+                !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+                ! Charge production rates (pscxxi,pscxxd,pscxxmi,pscxxmd)
+                !!
+                !!
+                !!  Charge production from mass transfer
+                !!
+                !!
+                !
+                !  cloud ice
+                !
+                if ( an(i,1,k,li) .gt. qxmin(li) ) then
+                    psccimi = fsccw*(qmults+qmultg) +&
+                              fscrw*(qmultr+qmultrg)
+                    psccimd = fscci*(-praci-pracis)
+                end if
+
+                !
+                !  cloud water
+                !
+                if ( an(i,1,k,lc) .gt. qxmin(lc) ) then
+                    psccwmi = 0.0
+                    psccwmd = fsccw*(-pra-prc-psacws-qmults-qmultg-psacwg-pgsacw)
+                end if
+
+                !
+                !  snow
+                !
+                if ( an(i,1,k,ls) .gt. qxmin(ls) ) then
+                    pscswmi = fsccw*(psacws) +&
+                              fscrw*(pracs1+piacrs+max(0.,-pracs)) +&
+                              fscci*(pracis)
+                    pscswmd = fscsw*(min(0.,psmlt)-psacr)
+                end if
+
+                !
+                !  graupel
+                !
+                if ( an(i,1,k,lh) .gt. qxmin(lh) ) then
+                    pschwmi = fscrw*(max(0.,-pracg)+pgracs+piacr+pracg1) +&
+                              fsccw*(psacwg+pgsacw) +&
+                              fscsw*(psacr) +&
+                              fscci*(praci)
+                    pschwmd = fschw*(min(0.,pgmlt))
+                end if
+
+                !
+                !  rain
+                !
+                if ( an(i,1,k,lr) .gt. qxmin(lr) ) then
+                    pscrwmi = fsccw*(prc+pra) +&
+                              fscsw*(max(0.,-psmlt)) +&
+                              fschw*(max(0.,-pgmlt))
+                    pscrwmd = fscrw*(-pracs1-qmultr-qmultrg-piacr-piacrs +&
+                                     -pracg1-pgracs +&
+                                     +min(0.,pracs)+min(0.,pracg))
+                end if
+
+
                 !!
                 !!
                 !! Collisional Charging transfers (inductive/noninductive)
@@ -4136,6 +4219,18 @@ CONTAINS
                         write(0,*)  pscrwmi, pscrwmd
                         write(0,*)  pscswmi, pscswmd
                         write(0,*)  pschwmi, pschwmd
+
+!                        pschwmi = fscrw*(max(0.,-pracg)+pgracs+piacr+pracg1) +&
+!                                fsccw*(psacwg+pgsacw) +&
+!                                fscsw*(psacr) +&
+!                                fscci*(praci)
+                        write(0,*) 'fscrw',fscrw,max(0.,-pracg),pgracs,piacr,pracg1
+                        write(0,*) 'fsccw',fsccw,psacwg,pgsacw
+                        write(0,*) 'fscsw',fscsw,psacr
+                        write(0,*) 'fscci',fscci,praci
+                        write(0,*) fscrw*(max(0.,-pracg)+pgracs+piacr+pracg1)
+                        write(0,*) fsccw*(psacwg+pgsacw)
+                        write(0,*) fscsw*(psacr), fscci*(praci)
                         write(0,*)
                         write(0,*)  pscc_sed(k)
                         write(0,*)  psci_sed(k)
