@@ -832,10 +832,14 @@ CONTAINS
                          noninduc(i,k,j) = (t2_2d(i,1,k) + t3_2d(i,1,k) + t6_2d(i,1,k) + t8_2d(i,1,k)) ! schaci + schacs
                          IF ( .not. ( noninduc(i,k,j) > -1.e-3 .and. noninduc(i,k,j) < 1.e-3 ) ) THEN
                              write(0,*) 'problem with noninduc! i,j,k,noninduc = ',i,j,k,noninduc(i,k,j)
+                             write (0,*) 'stopping'
+                             print*, 'stopping'
                              STOP
                          ENDIF
                          IF ( .not. ( induc(i,k,j) > -1.e-3 .and. induc(i,k,j) < 1.e-3 ) ) THEN
                              write(0,*) 'problem with induc! i,j,k,induc = ',i,j,k,induc(i,k,j),t5_2d(i,1,k)
+                             write (0,*) 'stopping'
+                             print*, 'stopping'
                              STOP
                          ENDIF
                          IF ( present( rscghis_2d ) ) THEN
@@ -1410,7 +1414,7 @@ CONTAINS
       REAL, INTENT(INOUT), DIMENSION(its:ite,kts:kte) ::   CHACS0 ! GRAUP-SNOW COLLISION RATE (#COLLI./M3/S)
       ! csaci0_morr is simply 9 times NPRAI for now, since eii=0.1
       REAL, DIMENSION(its:ite,kts:kte) ::   csaci0_morr ! SNOW-ICE COLLISION RATE, morr (#COLLI./kg/S)
-      REAL, DIMENSION(its:ite,kts:kte, lscw:lsch) :: DUMSC ! for use in sedimentation
+      REAL, DIMENSION(kts:kte, lscw:lsch) :: dumsc,tmpsc ! for use in sedimentation
       REAL :: SCX(its:ite,kts:kte,LC:LHAB) ! space charge per m3
       REAL, DIMENSION(its:ite,kts:kte) :: CIONP,CIONN,CLIONP,CLIONN,CIONPMXD,CIONNMXD
       REAL temcg(its:ite,kts:kte) ! T in Celcius
@@ -3649,7 +3653,6 @@ CONTAINS
                     IF ( Abs(scx(i,k,il)) > 1000.e-9 ) THEN
                     write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(i,k,il),an(i,1,k,il),an(i,1,k,ln(il))
                     write(0,*) 'at it, ix,jy,kz = ',itimestep ,i, j, k
-                    STOP
                     ENDIF
                 ENDDO
                 cionp(i,k) = an(i,1,k,lscpi) ! #/m3
@@ -4152,15 +4155,15 @@ CONTAINS
 
                 ! update scx array
                 scx(i,k,lc) = scx(i,k,lc) +   &
-                        &   dt*(psccwi + psccwd + psccwmi + psccwmd + pscc_sed(k))
+                        &   dt*(psccwi + psccwd + psccwmi + psccwmd)
                 scx(i,k,li) = scx(i,k,li) +   &
-                        &   dt*(psccii + psccid + psccimi + psccimd + psci_sed(k))
+                        &   dt*(psccii + psccid + psccimi + psccimd)
                 scx(i,k,lr) = scx(i,k,lr) +   &
-                        &   dt*(pscrwi + pscrwd + pscrwmi + pscrwmd + pscr_sed(k))
+                        &   dt*(pscrwi + pscrwd + pscrwmi + pscrwmd)
                 scx(i,k,ls) = scx(i,k,ls) +   &
-                        &   dt*(pscswi + pscswd + pscswmi + pscswmd + pscs_sed(k))
+                        &   dt*(pscswi + pscswd + pscswmi + pscswmd)
                 scx(i,k,lh) = scx(i,k,lh) +   &
-                        &   dt*(pschwi + pschwd + pschwmi + pschwmd + pscg_sed(k))
+                        &   dt*(pschwi + pschwd + pschwmi + pschwmd)
 
                 cionp(i,k) = cionp(i,k) +  &
                         &   dt*ec_i*(pscpii + pscpid) ! #/m3 * C / C/m3. ! each ion has electron charge
@@ -4178,16 +4181,16 @@ CONTAINS
                         write (0,*) 'scx=nan, iltest=',iltest
                         write (0,*) 'i,j,k,t=',i,j,k,itimestep
                         write (0,*) 'scx(k,iltest)=',scx(i,k,iltest)
-                        write (0,*) 'psccwi psccwd psccwmi psccwmd pscc_sed(k)'
-                        write (0,*) psccwi, psccwd, psccwmi, psccwmd, pscc_sed(k)
-                        write (0,*) 'psccii psccid psccimi psccimd psci_sed(k)'
-                        write (0,*) psccii, psccid, psccimi, psccimd, psci_sed(k)
-                        write (0,*) 'pscrwi pscrwd pscrwmi pscrwmd pscr_sed(k'
-                        write (0,*) pscrwi, pscrwd, pscrwmi, pscrwmd, pscr_sed(k)
-                        write (0,*) 'pscswi pscswd pscswmi pscswmd pscs_sed(k'
-                        write (0,*) pscswi, pscswd, pscswmi, pscswmd, pscs_sed(k)
-                        write (0,*) 'pschwi pschwd pschwmi pschwmd pscg_sed(k'
-                        write (0,*) pschwi, pschwd, pschwmi, pschwmd, pscg_sed(k)
+                        write (0,*) 'psccwi psccwd psccwmi psccwmd '
+                        write (0,*) psccwi, psccwd, psccwmi, psccwmd
+                        write (0,*) 'psccii psccid psccimi psccimd '
+                        write (0,*) psccii, psccid, psccimi, psccimd
+                        write (0,*) 'pscrwi pscrwd pscrwmi pscrwmd '
+                        write (0,*) pscrwi, pscrwd, pscrwmi, pscrwmd
+                        write (0,*) 'pscswi pscswd pscswmi pscswmd '
+                        write (0,*) pscswi, pscswd, pscswmi, pscswmd
+                        write (0,*) 'pschwi pschwd pschwmi pschwmd '
+                        write (0,*) pschwi, pschwd, pschwmi, pschwmd
                         write (0,*) 'stopping'
                         print*, 'stopping'
                         STOP
@@ -4234,13 +4237,6 @@ CONTAINS
                         write(0,*) fsccw*(psacwg+pgsacw)
                         write(0,*) fscsw*(psacr), fscci*(praci)
                         write(0,*)
-                        write(0,*)  pscc_sed(k)
-                        write(0,*)  psci_sed(k)
-                        write(0,*)  pscr_sed(k)
-                        write(0,*)  pscs_sed(k)
-                        write(0,*)  pscg_sed(k)
-
-                        stop
                     ENDIF
                 ENDDO
 
@@ -4417,6 +4413,17 @@ CONTAINS
             dumcs(k) = cs(i,k)*rho(i,k) !unitless (cs is volume now)
             dumg(k) = qg(i,k)*rho(i,k)
             dumng(k) = ng(i,k)*rho(i,k)
+            !-----------------------------------------------------------------------
+            !Explicit lightning ----------------------------------------------------
+            if (ipelec>0) then
+                dumsc(k,lsc(lc)) = an(i,1,k,lsc(lc))
+                dumsc(k,lsc(lr)) = an(i,1,k,lsc(lr))
+                dumsc(k,lsc(li)) = an(i,1,k,lsc(li))
+                dumsc(k,lsc(ls)) = an(i,1,k,lsc(ls))
+                dumsc(k,lsc(lg)) = an(i,1,k,lsc(lg))
+            end if
+            !End explicit lightning ------------------------------------------------
+            !-----------------------------------------------------------------------
          END DO
 
          DO n = 1, nstep
@@ -4436,6 +4443,17 @@ CONTAINS
                falloutcs(k) = fcs(k)*dumcs(k) !m s^-1
                falloutg(k) = fg(k)*dumg(k)
                falloutng(k) = fng(k)*dumng(k)
+               !-----------------------------------------------------------------------
+               !Explicit lightning ----------------------------------------------------
+               if (ipelec>0) then
+                   faloutscc(k) = fc(k)*dumsc(k,lsc(lc))
+                   faloutscr(k) = fr(k)*dumsc(k,lsc(lr))
+                   faloutsci(k) = fi(k)*dumsc(k,lsc(li))
+                   faloutscs(k) = fs(k)*dumsc(k,lsc(ls))
+                   faloutscg(k) = fg(k)*dumsc(k,lsc(lh))
+               end if
+               !End explicit lightning ------------------------------------------------
+               !-----------------------------------------------------------------------
 
             END DO
             
@@ -4491,6 +4509,30 @@ CONTAINS
             dumg(k) = dumg(k) - falltndg*dt/nstep
             dumng(k) = dumng(k) - falltndng*dt/nstep            
             
+            !-----------------------------------------------------------------------
+            !Explicit lightning ----------------------------------------------------
+            if (ipelec>0) then
+                faltndscc = faloutscc(k)/dzq(k)
+                faltndscr = faloutscr(k)/dzq(k)
+                faltndsci = faloutsci(k)/dzq(k)
+                faltndscs = faloutscs(k)/dzq(k)
+                faltndscg = faloutscg(k)/dzq(k)
+
+                pscc_sed(k) = pscc_sed(k)-faltndscc/nstep
+                pscr_sed(k) = pscr_sed(k)-faltndscr/nstep
+                psci_sed(k) = psci_sed(k)-faltndsci/nstep
+                pscs_sed(k) = pscs_sed(k)-faltndscs/nstep
+                pscg_sed(k) = pscg_sed(k)-faltndscg/nstep
+
+                dumsc(k,lsc(lc)) = dumsc(k,lsc(lc)) - faltndscc*dt/nstep
+                dumsc(k,lsc(lr)) = dumsc(k,lsc(lr)) - faltndscr*dt/nstep
+                dumsc(k,lsc(li)) = dumsc(k,lsc(li)) - faltndsci*dt/nstep
+                dumsc(k,lsc(ls)) = dumsc(k,lsc(ls)) - faltndscs*dt/nstep
+                dumsc(k,lsc(lg)) = dumsc(k,lsc(lg)) - faltndscg*dt/nstep
+            end if
+            !End explicit lightning ------------------------------------------------
+            !-----------------------------------------------------------------------
+
             DO k = kte-1,kts,-1
                
                falltndi = (fallouti(k+1) - fallouti(k))/dzq(k)
@@ -4543,6 +4585,29 @@ CONTAINS
                qiloss(k)=qiloss(k)+fallouti(k)
                qrloss(k)=qrloss(k)+falloutr(k)+falloutc(k)
 
+               !-----------------------------------------------------------------------
+               !Explicit lightning ----------------------------------------------------
+               if (ipelec>0) then
+                   FALTNDSCC = (FALOUTSCC(K+1)-FALOUTSCC(K))/DZQ(K)
+                   FALTNDSCR = (FALOUTSCR(K+1)-FALOUTSCR(K))/DZQ(K)
+                   FALTNDSCI = (FALOUTSCI(K+1)-FALOUTSCI(K))/DZQ(K)
+                   FALTNDSCS = (FALOUTSCS(K+1)-FALOUTSCS(K))/DZQ(K)
+                   FALTNDSCG = (FALOUTSCG(K+1)-FALOUTSCG(K))/DZQ(K)
+
+                   PSCC_SED(K) = PSCC_SED(K)+FALTNDSCC/NSTEP
+                   PSCR_SED(K) = PSCR_SED(K)+FALTNDSCR/NSTEP
+                   PSCI_SED(K) = PSCI_SED(K)+FALTNDSCI/NSTEP
+                   PSCS_SED(K) = PSCS_SED(K)+FALTNDSCS/NSTEP
+                   PSCG_SED(K) = PSCG_SED(K)+FALTNDSCG/NSTEP
+
+                   DUMSC(K,lsc(LC)) = DUMSC(K,lsc(LC)) + FALTNDSCC*DT/NSTEP
+                   DUMSC(K,lsc(LR)) = DUMSC(K,lsc(LR)) + FALTNDSCR*DT/NSTEP
+                   DUMSC(K,lsc(LI)) = DUMSC(K,lsc(LI)) + FALTNDSCI*DT/NSTEP
+                   DUMSC(K,lsc(LS)) = DUMSC(K,lsc(LS)) + FALTNDSCS*DT/NSTEP
+                   DUMSC(K,lsc(LG)) = DUMSC(K,lsc(LG)) + FALTNDSCG*DT/NSTEP
+               end if
+               !End explicit lightning ------------------------------------------------
+               !-----------------------------------------------------------------------
 
                ised(i,k) = ised(i,k) + fallouti(k)/nstep
                ssed(i,k) = ssed(i,k) + fallouts(k)/nstep
@@ -4581,6 +4646,40 @@ CONTAINS
             cs(i,k) = cs(i,k) + cssten(k)*dt !m kg^-1
             qg(i,k) = qg(i,k) + qgsten(k)*dt
             ng(i,k) = ng(i,k) + ngsten(k)*dt
+            !-----------------------------------------------------------------------
+            !Explicit lightning ----------------------------------------------------
+            if (ipelec>0) then
+                tmpsc(k,lsc(lc)) = an(i,1,k,lsc(lc))
+                tmpsc(k,lsc(lr)) = an(i,1,k,lsc(lr))
+                tmpsc(k,lsc(li)) = an(i,1,k,lsc(li))
+                tmpsc(k,lsc(ls)) = an(i,1,k,lsc(ls))
+                tmpsc(k,lsc(lg)) = an(i,1,k,lsc(lh))
+                an(i,1,k,lsc(lc)) = an(i,1,k,lsc(lc)) + pscc_sed(k)*dt
+                an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + pscr_sed(k)*dt
+                an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) + psci_sed(k)*dt
+                an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + pscs_sed(k)*dt
+                an(i,1,k,lsc(lh)) = an(i,1,k,lsc(lh)) + pscg_sed(k)*dt
+                do il = lc,lhab
+                    if (.not.( abs (an(i,1,k,lsc(il)) ) < 1000.e-9  )) then
+                        write(0,*) 'problem0a with scx after sedi.'
+                        write(0,*) 'il, lsc(il), = ',il,lsc(il),an(i,1,k,lsc(il))
+                        write(0,*) 'new, old = ',an(i,1,k,lsc(il)), tmpsc(k,lsc(il))
+                        write(0,*) 'pscc_sed(k), pscc_sed(k)*dt',pscc_sed(k), pscc_sed(k)*dt
+                        write(0,*) 'temper = ',t(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'qx,cx = ',an(i,1,k,il),an(i,1,k,ln(il))
+                        write(0,*)  pscc_sed(k)
+                        write(0,*)  psci_sed(k)
+                        write(0,*)  pscr_sed(k)
+                        write(0,*)  pscs_sed(k)
+                        write(0,*)  pscg_sed(k)
+                        write (0,*) 'stopping'
+                        print*, 'stopping'
+                        stop
+                    endif ! >1e-6
+                enddo ! il
+            end if ! ipelec            !End explicit lightning ------------------------------------------------
+            !-----------------------------------------------------------------------
 
             !if(as(i,k).gt.0.0)print*,'as4',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
 
@@ -6745,6 +6844,8 @@ CONTAINS
               del = tmp - dgam*i
               IF ( i+1 > ngm0 ) THEN
                   write(0,*) 'delabk: i+1 > ngm0!!!!',i,ngm0,nua,mua,tmp
+            write (0,*) 'stopping'
+            print*, 'stopping'
                   STOP
               ENDIF
               g1pnua = gmoi(i) + (gmoi(i+1) - gmoi(i))*del*dgami
@@ -7547,6 +7648,8 @@ CONTAINS
                     &                 qconkq,qconm,qconn,idelq,5)
         ELSE
             write(6,*) 'STOP! unsupported value of isaund = ',isaund
+            write (0,*) 'stopping'
+            print*, 'stopping'
             STOP
         ENDIF
         RETURN
