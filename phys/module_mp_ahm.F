@@ -1472,6 +1472,13 @@ CONTAINS
       real, dimension(kts:kte) :: faloutscc,faloutscr,faloutsci,faloutscs,faloutscg
       real :: faltndscc,faltndscr,faltndsci,faltndscs,faltndscg
 
+      ! temp mp rates for elec
+      real :: praci_e,pracis_e
+      real :: pra_e,prc_e,psacws_e,qmults_e,qmultg_e,psacwg_e,pgsacw_e
+      real :: psmlt_e,psacr_e
+      real :: pgmlt_e
+      real :: pracs1_e,qmultr_e,qmultrg_e,piacr_e,piacrs_e,pracg1_e,pgracs_e,pracs_e,pracg_e
+
       IF (IPELEC>0) THEN
           ! INITIALIZE VALUES NEEDED FOR EXPLICIT LIGHTNING
 
@@ -3949,13 +3956,290 @@ CONTAINS
                 !!  Charge production from mass transfer
                 !!
                 !!
+                !-------------- First get sink rates to ensure conservation
+                !-------------- i.e., loss of charge due to mass loss shouldn't lead to sign reversal
+                !-------------- i.e., pscxxmd shouldn't be more than scx/dt
                 !
                 !  cloud ice
                 !
                 if ( an(i,1,k,li) .gt. qxmin(li) ) then
-                    psccimi = fsccw*(qmults+qmultg) +&
-                              fscrw*(qmultr+qmultrg)
+!                    psccimi = fsccw*(qmults+qmultg) +&
+!                            fscrw*(qmultr+qmultrg)
+                    praci_e = praci
+                    pracis_e = pracis
                     psccimd = fscci*(-praci-pracis)
+                    if (-praci.gt.0.0 .or.&
+                            -pracis.gt.0.0) then
+                        write(0,*) 'sink terms pos for ice'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) '-praci', -praci
+                        write(0,*) '-pracis', -pracis
+                    end if
+                    if (psccimd*an(i,1,k,lsc(li)).gt.0.) then ! pscxxmd should lead to decrease of scx, so pscxxmd*scx should <=0
+                        write(0,*) 'ice psccimd same sign as an(lsci)'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'psccimd, an(i,1,k,lsc(li))',psccimd, an(i,1,k,lsc(li))
+                        write(0,*) 'fscci,praci_e,pracis_e'
+                        write(0,*) fscci,praci_e,pracis_e
+                        write(0,*) '(-praci_e-pracis_e)'
+                        write(0,*) (-praci_e-pracis_e)
+                        write(0,*) 'qx,cx = ',an(i,1,k,li),an(i,1,k,ln(li))
+                        write(0,*) 'stopping'
+                        print*, 'stopping'
+                        STOP
+                    end if
+                    if ((abs(psccimd)*dt) .gt. abs(an(i,1,k,lsc(li)))) then
+                        tmp = abs(an(i,1,k,lsc(li)) / (psccimd*dt))
+                        write(0,*) 'conserving ice sci, tmp= ',tmp
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'psccimd, dt',psccimd, dt
+                        write(0,*) 'psccimd*dt, an(i,1,k,lsc(li))', psccimd*dt, an(i,1,k,lsc(li))
+                        praci_e = tmp * praci_e
+                        pracis_e = tmp * pracis_e
+                        psccimd = tmp * psccimd
+                        write(0,*) 'psccimd after conserving',psccimd, psccimd*dt
+                    end if
+                end if
+
+                !
+                !  cloud water
+                !
+                if ( an(i,1,k,lc) .gt. qxmin(lc) ) then
+!                    psccwmi = 0.0
+                    pra_e = pra
+                    prc_e = prc
+                    psacws_e = psacws
+                    qmults_e = qmults
+                    qmultg_e = qmultg
+                    psacwg_e = psacwg
+                    pgsacw_e = pgsacw
+                    psccwmd = fsccw*(-pra-prc-psacws-qmults-qmultg-psacwg-pgsacw)
+                    if (-pra.gt.0.0 .or.&
+                        -prc.gt.0.0 .or.&
+                        -psacws.gt.0.0 .or.&
+                        -qmults.gt.0.0 .or.&
+                        -qmultg.gt.0.0 .or.&
+                        -psacwg.gt.0.0 .or.&
+                        -pgsacw.gt.0.0) then
+                        write(0,*) 'sink terms pos for cloud'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) '-pra',-pra
+                        write(0,*) '-prc',-prc
+                        write(0,*) '-psacws',-psacws
+                        write(0,*) '-qmults',-qmults
+                        write(0,*) '-qmultg',-qmultg
+                        write(0,*) '-psacwg',-psacwg
+                        write(0,*) '-pgsacw',-pgsacw
+                    end if
+                    if (psccwmd*an(i,1,k,lsc(lc)).gt.0.) then ! pscxxmd should lead to decrease of scx, so pscxxmd*scx should be neg
+                        write(0,*) 'cloud psccwmd same sign as an(lscw)'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'psccwmd, an(i,1,k,lsc(lc))',psccwmd, an(i,1,k,lsc(lc))
+                        write(0,*) 'fsccw,pra,prc,psacws,qmults,qmultg,psacwg,pgsacw'
+                        write(0,*) fsccw,pra,prc,psacws,qmults,qmultg,psacwg,pgsacw
+                        write(0,*) '(-pra_e-prc_e-psacws_e-qmults_e-qmultg_e-psacwg_e-pgsacw_e)'
+                        write(0,*) (-pra_e-prc_e-psacws_e-qmults_e-qmultg_e-psacwg_e-pgsacw_e)
+                        write(0,*) 'qx,cx = ',an(i,1,k,lc),an(i,1,k,ln(lc))
+                        write(0,*) 'stopping'
+                        print*, 'stopping'
+                        STOP
+                    end if
+                    if ((abs(psccwmd)*dt) .gt. abs(an(i,1,k,lsc(lc)))) then
+                        tmp = abs(an(i,1,k,lsc(lc)) / (psccwmd*dt))
+                        write(0,*) 'conserving cloud scw, tmp= ',tmp
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'psccwmd, dt',psccwmd, dt
+                        write(0,*) 'psccwmd*dt, an(i,1,k,lsc(lc))', psccwmd*dt, an(i,1,k,lsc(lc))
+                        pra_e = tmp * pra_e
+                        prc_e = tmp * prc_e
+                        psacws_e = tmp * psacws_e
+                        qmults_e = tmp * qmults_e
+                        qmultg_e = tmp * qmultg_e
+                        psacwg_e = tmp * psacwg_e
+                        pgsacw_e = tmp * pgsacw_e
+                        psccwmd = tmp * psccwmd
+                        write(0,*) 'psccwmd after conserving',psccwmd, psccwmd*dt
+                    end if
+                end if
+
+                !
+                !  snow
+                !
+                if ( an(i,1,k,ls) .gt. qxmin(ls) ) then
+!                    pscswmi = fsccw*(psacws) +&
+!                            fscrw*(pracs1+piacrs+max(0.,-pracs)) +&
+!                            fscci*(pracis)
+                    psmlt_e = psmlt
+                    psacr_e = psacr
+                    pscswmd = fscsw*(min(0.,psmlt)-psacr)
+                    if (min(0.,psmlt).gt.0.0 .or.&
+                            -psacr.gt.0.0) then
+                        write(0,*) 'sink terms pos for snow'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'min(0.,psmlt)', min(0.,psmlt)
+                        write(0,*) '-psacr', -psacr
+                    end if
+                    if (pscswmd*an(i,1,k,lsc(ls)).gt.0.) then ! pscxxmd should lead to decrease of scx, so pscxxmd*scx should be neg
+                        write(0,*) 'snow pscswmd same sign as an(lscs)'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'pscswmd, an(i,1,k,lsc(ls))',pscswmd, an(i,1,k,lsc(ls))
+                        write(0,*) 'fscsw,psmlt,psacr'
+                        write(0,*) fscsw,psmlt,psacr
+                        write(0,*) '(min(0.,psmlt_e)-psacr_e)'
+                        write(0,*) (min(0.,psmlt_e)-psacr_e)
+                        write(0,*) 'qx,cx = ',an(i,1,k,ls),an(i,1,k,ln(ls))
+                        write(0,*) 'stopping'
+                        print*, 'stopping'
+                        STOP
+                    end if
+                    if ((abs(pscswmd)*dt) .gt. abs(an(i,1,k,lsc(ls)))) then
+                        tmp = abs(an(i,1,k,lsc(ls)) / (pscswmd*dt))
+                        write(0,*) 'conserving snow scs, tmp= ',tmp
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'pscswmd, dt',pscswmd, dt
+                        write(0,*) 'pscswmd*dt, an(i,1,k,lsc(ls))', pscswmd*dt, an(i,1,k,lsc(ls))
+                        psmlt_e = tmp * psmlt_e
+                        psacr_e = tmp * psacr_e
+                        pscswmd = tmp * pscswmd
+                        write(0,*) 'pscswmd after conserving',pscswmd, pscswmd*dt
+                    end if
+                end if
+
+                !
+                !  graupel
+                !
+                if ( an(i,1,k,lh) .gt. qxmin(lh) ) then
+!                    pschwmi = fscrw*(max(0.,-pracg)+pgracs+piacr+pracg1) +&
+!                            fsccw*(psacwg+pgsacw) +&
+!                            fscsw*(psacr) +&
+!                            fscci*(praci)
+                    pgmlt_e = pgmlt
+                    pschwmd = fschw*(min(0.,pgmlt_e))
+                    if ((min(0.,pgmlt_e)).gt.0.0) then
+                        write(0,*) 'sink terms pos for graupel'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) '(min(0.,pgmlt_e))', (min(0.,pgmlt_e))
+                    end if
+                    if (pschwmd*an(i,1,k,lsc(lh)).gt.0.) then ! pscxxmd should lead to decrease of scx, so pscxxmd*scx should be neg
+                        write(0,*) 'graupel pschwmd same sign as an(lsch)'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'pschwmd, an(i,1,k,lsc(lh))',pschwmd, an(i,1,k,lsc(lh))
+                        write(0,*) 'fschw,pgmlt'
+                        write(0,*) fschw,pgmlt
+                        write(0,*) '(min(0.,pgmlt_e))'
+                        write(0,*) (min(0.,pgmlt_e))
+                        write(0,*) 'qx,cx = ',an(i,1,k,lh),an(i,1,k,ln(lh))
+                        write(0,*) 'stopping'
+                        print*, 'stopping'
+                        STOP
+                    end if
+                    if ((abs(pschwmd)*dt) .gt. abs(an(i,1,k,lsc(lh)))) then
+                        tmp = abs(an(i,1,k,lsc(lh)) / (pschwmd*dt))
+                        write(0,*) 'conserving graupel sch, tmp= ',tmp
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'pschwmd, dt',pschwmd, dt
+                        write(0,*) 'pschwmd*dt, an(i,1,k,lsc(lh))', pschwmd*dt, an(i,1,k,lsc(lh))
+                        pgmlt_e = tmp * pgmlt_e
+                        pschwmd = tmp * pschwmd
+                        write(0,*) 'pschwmd after conserving',pschwmd, pschwmd*dt
+                    end if
+                end if
+
+                !
+                !  rain
+                !
+                if ( an(i,1,k,lr) .gt. qxmin(lr) ) then
+!                    pscrwmi = fsccw*(prc+pra) +&
+!                            fscsw*(max(0.,-psmlt)) +&
+!                            fschw*(max(0.,-pgmlt))
+                    pracs1_e = pracs1
+                    qmultr_e = qmultr
+                    qmultrg_e = qmultrg
+                    piacr_e = piacr
+                    piacrs_e = piacrs
+                    pracg1_e = pracg1
+                    pgracs_e = pgracs
+                    pracs_e = pracs
+                    pracg_e = pracg
+                    pscrwmd = fscrw*(-pracs1-qmultr-qmultrg-piacr-piacrs &
+                            -pracg1-pgracs &
+                                     +min(0.,pracs)+min(0.,pracg))
+                    if (-pracs1.gt.0.0 .or.&
+                            -qmultr.gt.0.0 .or.&
+                            -qmultrg.gt.0.0 .or.&
+                            -piacr.gt.0.0 .or.&
+                            -piacrs.gt.0.0 .or.&
+                            -pracg1.gt.0.0 .or.&
+                            -pgracs.gt.0.0 .or.&
+                            min(0.,pracs).ne.0.0 .or.&
+                            min(0.,pracg).ne.0.0) then
+                        write(0,*) 'sink terms pos for rain'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) '-pracs1', -pracs1
+                        write(0,*) '-qmultr', -qmultr
+                        write(0,*) '-qmultrg', -qmultrg
+                        write(0,*) '-piacr', -piacr
+                        write(0,*) '-piacrs', -piacrs
+                        write(0,*) '-pracg1', -pracg1
+                        write(0,*) '-pgracs', -pgracs
+                        write(0,*) 'min(0.,pracs)', min(0.,pracs)
+                        write(0,*) 'min(0.,pracg)', min(0.,pracg)
+                    end if
+                    if (pscrwmd*an(i,1,k,lsc(lr)).gt.0.) then ! pscxxmd should lead to decrease of scx, so pscxxmd*scx should be neg
+                        write(0,*) 'rain pscrwmd same sign as an(lscr)'
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'pscrwmd, an(i,1,k,lsc(lr))',pscrwmd, an(i,1,k,lsc(lr))
+                        write(0,*) 'fschw,pracs1,qmultr,qmultrg,piacr,piacrs,pracg1,pgracs,pracs,pracg'
+                        write(0,*) fschw,pracs1,qmultr,qmultrg,piacr,piacrs,pracg1,pgracs,pracs,pracg
+                        write(0,*) '(-pracs1-qmultr-qmultrg-piacr-piacrs -pracg1-pgracs +min(0.,pracs)+min(0.,pracg))'
+                        write(0,*) (-pracs1-qmultr-qmultrg-piacr-piacrs -pracg1-pgracs +min(0.,pracs)+min(0.,pracg))
+                        write(0,*) 'qx,cx = ',an(i,1,k,lr),an(i,1,k,ln(lr))
+                        write(0,*) 'stopping'
+                        print*, 'stopping'
+                        STOP
+                    end if
+                    if ((abs(pscrwmd)*dt) .gt. abs(an(i,1,k,lsc(lr)))) then
+                        tmp = abs(an(i,1,k,lsc(lr)) / (pscrwmd*dt))
+                        write(0,*) 'conserving rain scr, tmp= ',tmp
+                        write(0,*) 'temper = ',T(i,k)
+                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write(0,*) 'pscrwmd, dt',pscrwmd, dt
+                        write(0,*) 'pscrwmd*dt, an(i,1,k,lsc(lr))', pscrwmd*dt, an(i,1,k,lsc(lr))
+                        pracs1_e = tmp * pracs1_e
+                        qmultr_e = tmp * qmultr_e
+                        qmultrg_e = tmp * qmultrg_e
+                        piacr_e = tmp * piacr_e
+                        piacrs_e = tmp * piacrs_e
+                        pracg1_e = tmp * pracg1_e
+                        pgracs_e = tmp * pgracs_e
+                        pracs_e = tmp * pracs_e
+                        pracg_e = tmp * pracg_e
+                        pscrwmd = tmp * pscrwmd
+                        write(0,*) 'pscrwmd after conserving',pscrwmd, pscrwmd*dt
+                    end if
+                end if
+
+                !-------------- Now get source rates from conserved sink rates
+                !
+                !  cloud ice
+                !
+                if ( an(i,1,k,li) .gt. qxmin(li) ) then
+                    psccimi = fsccw*(qmults_e+qmultg_e) +&
+                            fscrw*(qmultr_e+qmultrg_e)
                 end if
 
                 !
@@ -3963,42 +4247,35 @@ CONTAINS
                 !
                 if ( an(i,1,k,lc) .gt. qxmin(lc) ) then
                     psccwmi = 0.0
-                    psccwmd = fsccw*(-pra-prc-psacws-qmults-qmultg-psacwg-pgsacw)
                 end if
 
                 !
                 !  snow
                 !
                 if ( an(i,1,k,ls) .gt. qxmin(ls) ) then
-                    pscswmi = fsccw*(psacws) +&
-                              fscrw*(pracs1+piacrs+max(0.,-pracs)) +&
-                              fscci*(pracis)
-                    pscswmd = fscsw*(min(0.,psmlt)-psacr)
+                    pscswmi = fsccw*(psacws_e) +&
+                            fscrw*(pracs1_e+piacrs_e+max(0.,-pracs_e)) +&
+                            fscci*(pracis_e)
                 end if
 
                 !
                 !  graupel
                 !
                 if ( an(i,1,k,lh) .gt. qxmin(lh) ) then
-                    pschwmi = fscrw*(max(0.,-pracg)+pgracs+piacr+pracg1) +&
-                              fsccw*(psacwg+pgsacw) +&
-                              fscsw*(psacr) +&
-                              fscci*(praci)
-                    pschwmd = fschw*(min(0.,pgmlt))
+                    pschwmi = fscrw*(max(0.,-pracg_e)+pgracs_e+piacr_e+pracg1_e) +&
+                            fsccw*(psacwg_e+pgsacw_e) +&
+                            fscsw*(psacr_e) +&
+                            fscci*(praci_e)
                 end if
 
                 !
                 !  rain
                 !
                 if ( an(i,1,k,lr) .gt. qxmin(lr) ) then
-                    pscrwmi = fsccw*(prc+pra) +&
-                              fscsw*(max(0.,-psmlt)) +&
-                              fschw*(max(0.,-pgmlt))
-                    pscrwmd = fscrw*(-pracs1-qmultr-qmultrg-piacr-piacrs +&
-                                     -pracg1-pgracs +&
-                                     +min(0.,pracs)+min(0.,pracg))
+                    pscrwmi = fsccw*(prc_e+pra_e) +&
+                            fscsw*(max(0.,-psmlt_e)) +&
+                            fschw*(max(0.,-pgmlt_e))
                 end if
-
 
                 !!
                 !!
