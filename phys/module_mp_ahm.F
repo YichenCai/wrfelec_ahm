@@ -1498,8 +1498,8 @@ CONTAINS
           gf4p5 = 11.63172839656745 ! gamma(4.0+0.5)
           gf3p5 = 3.32335097 ! gamma(3.5)
           gf1p5 = 0.8862269255  ! gamma(1.5)
-          print*, 'DA0LH,DA0LI,DA0LS',DA0LH,DA0LI,DA0LS
-          print*, 'DAB0LH_IH,DAB0LH_SH',DAB0LH_IH,DAB0LH_SH
+!          print*, 'DA0LH,DA0LI,DA0LS',DA0LH,DA0LI,DA0LS
+!          print*, 'DAB0LH_IH,DAB0LH_SH',DAB0LH_IH,DAB0LH_SH
 
           DO i = its,ite
               DO k = kts,kte
@@ -1677,7 +1677,9 @@ CONTAINS
                ci(i,k) = 0.0
                ani = 0.0
                cni = 0.0
+               if (ipelec>0) then
                an(i,1,k,lsc(li)) = 0.0
+               end if
             END IF
             rni = (ani**2*cni)**(1./3.)
             ai(i,k) = nu*ni(i,k)*ani
@@ -1687,14 +1689,18 @@ CONTAINS
             IF(qc(i,k).lt.qsmall)THEN
                qc(i,k) = 0.
                nc(i,k) = 0.
+               if (ipelec>0) then
                an(i,1,k,lsc(lc)) = 0.0
+               end if
             END IF
 
             !RAIN WATER
             IF(qr(i,k).lt.qsmall)THEN
                qr(i,k) = 0.
                nr(i,k) = 0.
+               if (ipelec>0) then
                an(i,1,k,lsc(lr)) = 0.0
+               end if
             END IF
 
             !SNOW (AGGREGATES)
@@ -1720,7 +1726,9 @@ CONTAINS
                ans = 0.0
                cns = 0.0
                rns = 0.0
+               if (ipelec>0) then
                an(i,1,k,lsc(ls)) = 0.0
+               end if
             END IF
             
 
@@ -1728,7 +1736,9 @@ CONTAINS
             IF(qg(i,k).lt.qsmall)THEN
                qg(i,k) = 0.
                ng(i,k) = 0.
+               if (ipelec>0) then
                an(i,1,k,lsc(lg)) = 0.0
+               end if
             END IF
 !     initialize process rates
             mnuccd = 0.;mnuccr = 0.;mnuccc = 0.;mnucci = 0.
@@ -1996,8 +2006,10 @@ CONTAINS
                         temp=temp-qs(i,k)*xxlf/cpm
                         qs(i,k) = 0.0
                         ns(i,k) = 0.0
+                        if (ipelec>0) then
                         an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(ls))
                         an(i,1,k,lsc(ls)) = 0.0
+                        end if
                      ENDIF
                      
                      IF(qg(i,k).lt.1.e-6)THEN
@@ -2006,8 +2018,10 @@ CONTAINS
                         temp=temp-qg(i,k)*xxlf/cpm
                         qg(i,k) = 0.0
                         ng(i,k) = 0.0
+                        if (ipelec>0) then
                         an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(lg))
                         an(i,1,k,lsc(lg)) = 0.0
+                        end if
                      ENDIF
                   ENDIF
 !       recalculate rain distribution parameters if rain now exists
@@ -3006,10 +3020,15 @@ CONTAINS
 !     Assume rhobar remains the same.
 !     Note: agg & nagg are negative numbers
                   
-                  IF(nagg .ne. 0.0)THEN 
+                  IF(nagg .ne. 0.0)THEN
+                      if (ipelec>0) then
+                          tmp = an(i,1,k,lsc(li))/qi(i,k)
+                          an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) - tmp*agg*dt
+                          an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) + tmp*agg*dt
+                     end if
                      qs(i,k) = qs(i,k) - agg*dt
                      ns(i,k) = ns(i,k) - nagg*dt
-                     
+
                      qi(i,k) = qi(i,k) + agg*dt
                      ni(i,k) = ni(i,k) + nagg*dt
                   END IF
@@ -3045,13 +3064,18 @@ CONTAINS
                   lams**(bs+3.)
                   nprai = cons23*asn(k)*ni(i,k)*rho(i,k)*n0s/lams**(bs+3.)
                   nprai = min(nprai,ni(i,k)/dt)
-                  
+
+                  if (ipelec>0) then
+                      tmp = an(i,1,k,lsc(li))/qi(i,k)
+                      an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + tmp*prai*dt
+                      an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) - tmp*prai*dt
+                  end if
                   qs(i,k) = qs(i,k) + prai*dt
                   ns(i,k) = ns(i,k) + nprai*dt
-                  
+
                   qi(i,k) = qi(i,k) - prai*dt
                   ni(i,k) = ni(i,k) - nprai*dt
-                  
+
                   praiout(i,k) = prai
                END IF
             ELSE IF(snowflag.eq.2)THEN
@@ -3107,6 +3131,11 @@ CONTAINS
                      if(ns(i,k)+ns_new.gt.qsmall) frac = ns(i,k)/(ns(i,k)+ns_new)
                      if(qs(i,k)+qs_new.gt.qsmall) frac = qs(i,k)/(qs(i,k)+qs_new)
 
+                     if (ipelec>0.and.qi(i,k).gt.qsmall) then
+                         tmp = an(i,1,k,lsc(li))/qi(i,k) ! charge per mass of ice
+                         an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + tmp*agg*dt/rho(i,k)
+                         an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) - tmp*agg*dt/rho(i,k)
+                     end if
                      qs(i,k) = qs(i,k) + qs_new
                      ns(i,k) = ns(i,k) + ns_new
                      
@@ -3161,6 +3190,9 @@ CONTAINS
                   as(i,k) = 0.0
                   cs(i,k) = 0.0
                END IF
+               if (ipelec>0) then
+                   an(i,1,k,lsc(ls)) = 0.0
+               end if
             END IF
 !..................................................................
 !     now update qi, ni, ai, and ci due to ice nucleation
@@ -3174,9 +3206,17 @@ CONTAINS
                IF((mnuccc+mnucci)*dt .lt. qc(i,k))then
                   qi(i,k)=qi(i,k)+(mnuccc+mnucci)*dt
                   ni(i,k)=ni(i,k)+(nnuccc+nnucci)*dt
+                  if (ipelec>0) then
+                      tmp = an(i,1,k,lsc(lc))/qc(i,k) ! charge per mass of water
+                      an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) + tmp*(mnuccc+mnucci)*dt
+!                      an(i,1,k,lsc(lc)) = an(i,1,k,lsc(lc)) - tmp*(mnuccc+mnucci)*dt ! done later
+                  end if
                ELSE
                   qi(i,k)=qi(i,k)+qc(i,k)
                   ni(i,k)=ni(i,k)+nc(i,k)
+                  if (ipelec>0) then
+                      an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) + an(i,1,k,lsc(lc))
+                  end if
                END IF
             END IF
 
@@ -3219,6 +3259,9 @@ CONTAINS
                ni(i,k)=0.
                ci(i,k)=0.
                rhobar=920.
+               if (ipelec>0) then
+                   an(i,1,k,lsc(li)) = 0.0
+               end if
             ELSE
                qv(i,k)=qv(i,k)-(prd+mnuccd)*dt
                temp=temp+((prd+mnuccd)*xxls/cpm*dt)
@@ -3228,6 +3271,10 @@ CONTAINS
                qiold = qi(i,k)
                IF(qc(i,k).ge.qsmall)THEN
                   IF((mnuccc+mnucci)*dt .lt. qc(i,k))then
+                     if (ipelec>0) then
+                         tmp = an(i,1,k,lsc(lc))/qc(i,k) ! charge per mass of water
+                         an(i,1,k,lsc(lc)) = an(i,1,k,lsc(lc)) - tmp*(mnuccc+mnucci)*dt
+                     end if
                      qc(i,k)=qc(i,k)-(mnuccc+mnucci)*dt
                      nc(i,k)=nc(i,k)-(nnuccc+nnucci)*dt
                      temp=temp+((mnuccc+mnucci)*xxlf/cpm*dt)
@@ -3241,6 +3288,9 @@ CONTAINS
                      immersion(i,k)=qc(i,k)/dt*mnucci/(mnuccc+mnucci)
                      qc(i,k)=0.0
                      nc(i,k)=0.0
+                     if (ipelec>0) then
+                         an(i,1,k,lsc(lc)) = 0.0
+                     end if
                   END IF
                END IF
             END IF
@@ -3258,6 +3308,11 @@ CONTAINS
                        rhobar = RHOI
                     END IF
 
+                    if (ipelec>0.and.qi(i,k).ge.qsmall) then
+                        tmp = an(i,1,k,lsc(li))/qi(i,k) ! charge per mass of ice
+                        an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) + tmp*qmlt*dt
+                        an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) - tmp*qmlt*dt
+                    end if
                     qi(i,k) = qi(i,k) + qmlt*dt
                     ni(i,k) = ni(i,k) + nmlt*dt
                     ai(i,k) = ai(i,k) + amlt*dt
@@ -3270,6 +3325,10 @@ CONTAINS
                     if(qi(i,k).le.QSMALL) then
                        qr(i,k) = qr(i,k) + qi(i,k)
                        qi(i,k)=0.
+                       if (ipelec>0) then
+                           an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(li))
+                           an(i,1,k,lsc(li)) = 0.0
+                       end if
                     endif
 
                     IF(qi(i,k).gt.QSMALL)THEN
@@ -3315,6 +3374,11 @@ CONTAINS
                            rhos(i,k) = RHOI
                         END IF
 
+                        if (ipelec>0.and.qs(i,k).ge.qsmall) then
+                            tmp = an(i,1,k,lsc(ls))/qs(i,k) ! charge per mass of snow
+                            an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + tmp*qsmlt*dt
+                            an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) - tmp*qsmlt*dt
+                        end if
                         qs(i,k) = qs(i,k) + qsmlt*dt
                         ns(i,k) = ns(i,k) + nsmlt*dt
                         as(i,k) = as(i,k) + asmlt*dt
@@ -3323,10 +3387,15 @@ CONTAINS
                         qr(i,k)=qr(i,k)-qsmlt*dt
                         nr(i,k)=nr(i,k)-nsmlt*dt
 
+
                         !.. Small masses of leftover snow can become rain
                         if(qs(i,k).le.QSMALL) then
                            qr(i,k) = qr(i,k) + qs(i,k)
                            qs(i,k)=0.
+                           if (ipelec>0) then
+                               an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(ls))
+                               an(i,1,k,lsc(ls)) = 0.0
+                           end if
                         endif
 
                         IF(qs(i,k).gt.QSMALL)THEN
@@ -3373,6 +3442,9 @@ CONTAINS
                   as(i,k) = 0.0
                   cs(i,k) = 0.0
                	END IF
+               if (ipelec>0) then
+                   an(i,1,k,lsc(ls)) = 0.0
+               end if
             END IF
 
 !     get fallspeed parameters
@@ -3526,111 +3598,6 @@ CONTAINS
             nitend = (nmults+nmultg+nmultr+nmultrg-niacr-niacrs)
             qi(i,k) = qi(i,k) + qitend*dt
             ni(i,k) = ni(i,k) + nitend*dt
-
-            rainevap(i,k) = -1.*pre
-            nraggout(i,k) = nragg
-            IF(snowflag.eq.1)THEN
-               snowevap(i,k) = -1.*evpms
-               snowmelt(i,k) = -1.*psmlt
-               snowdep(i,k) = prds
-               snowsub(i,k) = eprds
-               snowaccr(i,k) = pracs
-            ELSE IF(snowflag.eq.2)THEN
-               snowmelt(i,k) = qsmlt*-1.
-            END IF
-!     add liquid, do saturation adjustment to get updated qc
-!     get updated thermodynamics (updated after ice microphysics)
-            
-!     get temp from 0theta (in K)
-           
-            dum=min(0.99*press,polysvp1(temp,0))
-            qvs=0.622*dum/(press-dum) 
-            dum=qv(i,k)-qvs
-            pcc=dum/(1.+xxlv**2*qvs/(cpm*rv*temp**2))/dt
-            IF(pcc*dt+qc(i,k).lt.0.)THEN
-               pcc=-qc(i,k)/dt
-            END IF
-            !relh(i,k) = qv(i,k)/qvs*100. 
-            !condrate(i,k)=pcc
-!     update variables due to condensation/evaporation
-
-            temp=temp+pcc*xxlv/cpm*dt
-            qv(i,k)=qv(i,k)-pcc*dt
-            qc(i,k)=qc(i,k)+pcc*dt
-            IF(pcc .gt. 0.0)THEN
-               cloudcond(i,k) = pcc
-            ELSE
-               cloudevap(i,k) = pcc
-            END IF
-!     for now, assume droplet fallspeed is zero           
-            vtrmc(i,k)=0.
-
-            !temp3(i,k)=temp
-            t(i,k) = temp
-
-!     add melting, melt all ice within one time step above freezing
-
-            IF(meltflag.ne.1)THEN
-                IF(t(i,k).ge.273.15)THEN
-                   IF(qi(i,k).ge.qsmall)THEN
-                      qr(i,k)=qr(i,k)+qi(i,k)
-                      nr(i,k)=nr(i,k)+ni(i,k)
-                      t(i,k)=t(i,k)-qi(i,k)*xxlf/cpm
-                      icemelt(i,k) = qi(i,k)/dt
-                      qi(i,k)=0.
-                      ni(i,k)=0.
-                      ai(i,k)=0.
-                      ci(i,k)=0.
-                   END IF
-                   IF(snowflag.eq.2)THEN
-                      IF(qs(i,k).ge.qsmall)THEN
-                         qr(i,k)=qr(i,k)+qs(i,k)
-                         nr(i,k)=nr(i,k)+ns(i,k)
-                         t(i,k)=t(i,k)-qs(i,k)*xxlf/cpm
-                         snowmelt(i,k) = qs(i,k)/dt
-                         qs(i,k)=0.
-                         ns(i,k)=0.
-                         as(i,k)=0.
-                         cs(i,k)=0.
-                      END IF
-                   END IF
-                END IF
-            END IF
-!     homogeneous freezing, freeze andd cloud and rain water within one time-step below -40
-            IF(homofreeze .eq. 1.and.t(i,k).le.233.15.and.&
-               real(itimestep)*dt.gt.ice_start_time)THEN
-               IF(nr(i,k).ge.qsmall.and.qr(i,k).ge.qsmall)THEN
-
-                  qi(i,k)=qi(i,k)+qr(i,k)
-                  ni(i,k)=ni(i,k)+nr(i,k)
-                  t(i,k)=t(i,k)+qr(i,k)*(xxls-xxlv)/cpm
-!                  nnew = qr(i,k)/((4./3.)*pi*rhoi*(200.e-6)**3)
-                  ai(i,k) = ai(i,k) + nu*nr(i,k)*(qr(i,k)*3./(4.*pi*&
-                  rhoi*nr(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
-                  ci(i,k) = ci(i,k) + nu*nr(i,k)*(qr(i,k)*3./(4.*pi*&
-                  rhoi*nr(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
-                  rainfrz(i,k) = qr(i,k)/dt 
-                  qr(i,k)=0.
-                  nr(i,k)=0.
-
-               END IF
-               IF(nc(i,k).ge.qsmall.and.qc(i,k).ge.qsmall)THEN
-
-                  qi(i,k)=qi(i,k)+qc(i,k)
-                  ni(i,k)=ni(i,k)+nc(i,k)
-                  t(i,k)=t(i,k)+qc(i,k)*(xxls-xxlv)/cpm
-                  !nnew = qc(i,k)/((4./3.)*pi*rhoi*(20.e-6)**3)
-                  ai(i,k) = ai(i,k) + nu*nc(i,k)*(qc(i,k)*3./(4.*pi*&
-                  rhoi*nc(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
-                  ci(i,k) = ci(i,k) + nu*nc(i,k)*(qc(i,k)*3./(4.*pi*&
-                  rhoi*nc(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
-                  !ni(i,k) = ni(i,k) + nnew
-                  cloudfrz(i,k) = qc(i,k)/dt
-                  qc(i,k)=0.
-                  nc(i,k)=0.
-
-               END IF
-            END IF
 
             ! ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
             ! yc added 6/30/2022. for elec
@@ -4153,6 +4120,15 @@ CONTAINS
                         & + min(schacs(i,k),0.0)   &
                         & + min(schacw(i,k),0.0)
 
+                do iltest=lc,lh
+                    if (isnan(scx(i,k,iltest))) then
+                        write (0,*) 'scx=nan, iltest=',iltest
+                        write (0,*) 'i,j,k,t=',i,j,k,itimestep
+                        write (0,*) 'scx(k,iltest)=',scx(i,k,iltest)
+                        write (0,*) 'an(i,1,k,lsc(il))=',an(i,1,k,lsc(il))
+                    end if
+                end do
+
                 ! update scx array
                 scx(i,k,lc) = scx(i,k,lc) +   &
                         &   dt*(psccwi + psccwd + psccwmi + psccwmd)
@@ -4225,10 +4201,6 @@ CONTAINS
                         write(0,*)  pscswmi, pscswmd
                         write(0,*)  pschwmi, pschwmd
 
-!                        pschwmi = fscrw*(max(0.,-pracg)+pgracs+piacr+pracg1) +&
-!                                fsccw*(psacwg+pgsacw) +&
-!                                fscsw*(psacr) +&
-!                                fscci*(praci)
                         write(0,*) 'fscrw',fscrw,max(0.,-pracg),pgracs,piacr,pracg1
                         write(0,*) 'fsccw',fsccw,psacwg,pgsacw
                         write(0,*) 'fscsw',fscsw,psacr
@@ -4244,6 +4216,127 @@ CONTAINS
             ! end charging
             ! ⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡
 
+
+            rainevap(i,k) = -1.*pre
+            nraggout(i,k) = nragg
+            IF(snowflag.eq.1)THEN
+               snowevap(i,k) = -1.*evpms
+               snowmelt(i,k) = -1.*psmlt
+               snowdep(i,k) = prds
+               snowsub(i,k) = eprds
+               snowaccr(i,k) = pracs
+            ELSE IF(snowflag.eq.2)THEN
+               snowmelt(i,k) = qsmlt*-1.
+            END IF
+!     add liquid, do saturation adjustment to get updated qc
+!     get updated thermodynamics (updated after ice microphysics)
+
+!     get temp from 0theta (in K)
+
+            dum=min(0.99*press,polysvp1(temp,0))
+            qvs=0.622*dum/(press-dum)
+            dum=qv(i,k)-qvs
+            pcc=dum/(1.+xxlv**2*qvs/(cpm*rv*temp**2))/dt
+            IF(pcc*dt+qc(i,k).lt.0.)THEN
+               pcc=-qc(i,k)/dt
+            END IF
+            !relh(i,k) = qv(i,k)/qvs*100.
+            !condrate(i,k)=pcc
+!     update variables due to condensation/evaporation
+
+            temp=temp+pcc*xxlv/cpm*dt
+            qv(i,k)=qv(i,k)-pcc*dt
+            qc(i,k)=qc(i,k)+pcc*dt
+            IF(pcc .gt. 0.0)THEN
+               cloudcond(i,k) = pcc
+            ELSE
+               cloudevap(i,k) = pcc
+            END IF
+!     for now, assume droplet fallspeed is zero
+            vtrmc(i,k)=0.
+
+            !temp3(i,k)=temp
+            t(i,k) = temp
+
+!     add melting, melt all ice within one time step above freezing
+
+            IF(meltflag.ne.1)THEN
+                IF(t(i,k).ge.273.15)THEN
+                   IF(qi(i,k).ge.qsmall)THEN
+                      qr(i,k)=qr(i,k)+qi(i,k)
+                      nr(i,k)=nr(i,k)+ni(i,k)
+                      t(i,k)=t(i,k)-qi(i,k)*xxlf/cpm
+                      icemelt(i,k) = qi(i,k)/dt
+                      qi(i,k)=0.
+                      ni(i,k)=0.
+                      ai(i,k)=0.
+                      ci(i,k)=0.
+                      if (ipelec>0) then
+                          an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(li))
+                          an(i,1,k,lsc(li)) = 0.0
+                      end if
+                   END IF
+                   IF(snowflag.eq.2)THEN
+                      IF(qs(i,k).ge.qsmall)THEN
+                         qr(i,k)=qr(i,k)+qs(i,k)
+                         nr(i,k)=nr(i,k)+ns(i,k)
+                         t(i,k)=t(i,k)-qs(i,k)*xxlf/cpm
+                         snowmelt(i,k) = qs(i,k)/dt
+                         qs(i,k)=0.
+                         ns(i,k)=0.
+                         as(i,k)=0.
+                         cs(i,k)=0.
+                         if (ipelec>0) then
+                             an(i,1,k,lsc(lr)) = an(i,1,k,lsc(lr)) + an(i,1,k,lsc(ls))
+                             an(i,1,k,lsc(ls)) = 0.0
+                         end if
+                      END IF
+                   END IF
+                END IF
+            END IF
+!     homogeneous freezing, freeze andd cloud and rain water within one time-step below -40
+            IF(homofreeze .eq. 1.and.t(i,k).le.233.15.and.&
+               real(itimestep)*dt.gt.ice_start_time)THEN
+               IF(nr(i,k).ge.qsmall.and.qr(i,k).ge.qsmall)THEN
+
+                  qi(i,k)=qi(i,k)+qr(i,k)
+                  ni(i,k)=ni(i,k)+nr(i,k)
+                  t(i,k)=t(i,k)+qr(i,k)*(xxls-xxlv)/cpm
+!                  nnew = qr(i,k)/((4./3.)*pi*rhoi*(200.e-6)**3)
+                  ai(i,k) = ai(i,k) + nu*nr(i,k)*(qr(i,k)*3./(4.*pi*&
+                  rhoi*nr(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
+                  ci(i,k) = ci(i,k) + nu*nr(i,k)*(qr(i,k)*3./(4.*pi*&
+                  rhoi*nr(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
+                  rainfrz(i,k) = qr(i,k)/dt
+                  qr(i,k)=0.
+                  nr(i,k)=0.
+                  if (ipelec>0) then
+                      an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) + an(i,1,k,lsc(lr))
+                      an(i,1,k,lsc(lr)) = 0.0
+                  end if
+
+               END IF
+               IF(nc(i,k).ge.qsmall.and.qc(i,k).ge.qsmall)THEN
+
+                  qi(i,k)=qi(i,k)+qc(i,k)
+                  ni(i,k)=ni(i,k)+nc(i,k)
+                  t(i,k)=t(i,k)+qc(i,k)*(xxls-xxlv)/cpm
+                  !nnew = qc(i,k)/((4./3.)*pi*rhoi*(20.e-6)**3)
+                  ai(i,k) = ai(i,k) + nu*nc(i,k)*(qc(i,k)*3./(4.*pi*&
+                  rhoi*nc(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
+                  ci(i,k) = ci(i,k) + nu*nc(i,k)*(qc(i,k)*3./(4.*pi*&
+                  rhoi*nc(i,k))*gammnu/exp(gammln(nu+3)))**(1./3.)
+                  !ni(i,k) = ni(i,k) + nnew
+                  cloudfrz(i,k) = qc(i,k)/dt
+                  qc(i,k)=0.
+                  nc(i,k)=0.
+                  if (ipelec>0) then
+                      an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) + an(i,1,k,lsc(lc))
+                      an(i,1,k,lsc(lc)) = 0.0
+                  end if
+
+               END IF
+            END IF
             LTRUE = 1
 
  200        CONTINUE
@@ -4681,6 +4774,37 @@ CONTAINS
             end if ! ipelec            !End explicit lightning ------------------------------------------------
             !-----------------------------------------------------------------------
 
+
+            ! yc added 2/24/2022
+!            if(qi(i,k).lt.0.0) write(0,*) 'qi neg',qi(i,k),i,k
+!            if(ni(i,k).lt.0.0) write(0,*) 'ni neg',ni(i,k),i,k
+!            if(ai(i,k).lt.0.0) write(0,*) 'ai neg',ai(i,k),i,k
+!            if(ci(i,k).lt.0.0) write(0,*) 'ci neg',ci(i,k),i,k
+!            if(qr(i,k).lt.0.0) write(0,*) 'qr neg',qr(i,k),i,k
+!            if(qc(i,k).lt.0.0) write(0,*) 'qc neg',qc(i,k),i,k
+!            if(nr(i,k).lt.0.0) write(0,*) 'nr neg',nr(i,k),i,k
+!            if(nc(i,k).lt.0.0) write(0,*) 'nc neg',nc(i,k),i,k
+!            if(qs(i,k).lt.0.0) write(0,*) 'qs neg',qs(i,k),i,k
+!            if(ns(i,k).lt.0.0) write(0,*) 'ns neg',ns(i,k),i,k
+!            if(as(i,k).lt.0.0) write(0,*) 'as neg',as(i,k),i,k
+!            if(cs(i,k).lt.0.0) write(0,*) 'cs neg',cs(i,k),i,k
+!            if(qg(i,k).lt.0.0) write(0,*) 'qg neg',qg(i,k),i,k
+!            if(ng(i,k).lt.0.0) write(0,*) 'ng neg',ng(i,k),i,k
+            ! get rid of artificial neg q/n, prevent adding to qv
+!            qi(i,k) = max(qi(i,k),0.0)
+!            ni(i,k) = max(ni(i,k),0.0)
+!            ai(i,k) = max(ai(i,k),0.0)
+!            ci(i,k) = max(ci(i,k),0.0)
+!            qr(i,k) = max(qr(i,k),0.0)
+!            qc(i,k) = max(qc(i,k),0.0)
+!            nr(i,k) = max(nr(i,k),0.0)
+!            nc(i,k) = max(nc(i,k),0.0)
+!            qs(i,k) = max(qs(i,k),0.0)
+!            ns(i,k) = max(ns(i,k),0.0)
+!            as(i,k) = max(as(i,k),0.0)
+!            cs(i,k) = max(cs(i,k),0.0)
+!            qg(i,k) = max(qg(i,k),0.0)
+!            ng(i,k) = max(ng(i,k),0.0)
             !if(as(i,k).gt.0.0)print*,'as4',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
 
             evs = min(FUDGE*p(i,k),polysvp1(t(i,k),0)) !Pa
@@ -4695,11 +4819,27 @@ CONTAINS
                   qv(i,k) = qv(i,k) + qr(i,k)
                   t(i,k) = t(i,k) - qr(i,k)*xxlv/cpm
                   qr(i,k) = 0.0
+                  if (ipelec>0) then
+                      IF ( an(i,1,k,lscr) .gt. 0.0 ) THEN
+                          an(i,1,k,lscpi) = an(i,1,k,lscpi) + an(i,1,k,lscr)*ec_i
+                      ELSE
+                          an(i,1,k,lscni) = an(i,1,k,lscni) - an(i,1,k,lscr)*ec_i
+                      ENDIF
+                      an(i,1,k,lscr) = 0.0
+                  end if
                END IF
                IF(qc(i,k).lt.1.e-8)THEN
                   qv(i,k) = qv(i,k) + qc(i,k)
                   t(i,k) = t(i,k) - qc(i,k)*xxlv/cpm
                   qc(i,k) = 0.0
+                  if (ipelec>0) then
+                      IF ( an(i,1,k,lscw) .gt. 0.0 ) THEN
+                          an(i,1,k,lscpi) = an(i,1,k,lscpi) + an(i,1,k,lscw)*ec_i
+                      ELSE
+                          an(i,1,k,lscni) = an(i,1,k,lscni) - an(i,1,k,lscw)*ec_i
+                      ENDIF
+                      an(i,1,k,lscw) = 0.0
+                  end if
                END IF
             END IF
 
@@ -4708,16 +4848,40 @@ CONTAINS
                   qv(i,k) = qv(i,k) + qi(i,k)
                   t(i,k) = t(i,k) - qi(i,k)*xxls/cpm
                   qi(i,k) = 0.0
+                  if (ipelec>0) then
+                      IF ( an(i,1,k,lsc(li)) .gt. 0.0 ) THEN
+                          an(i,1,k,lscpi) = an(i,1,k,lscpi) + an(i,1,k,lsc(li))*ec_i
+                      ELSE
+                          an(i,1,k,lscni) = an(i,1,k,lscni) - an(i,1,k,lsc(li))*ec_i
+                      ENDIF
+                      an(i,1,k,lsc(li)) = 0.0
+                  end if
                END IF
                IF(qs(i,k).lt.1.e-8)THEN
                   qv(i,k) = qv(i,k) + qs(i,k)
                   t(i,k) = t(i,k) - qs(i,k)*xxls/cpm
                   qs(i,k) = 0.0
+                  if (ipelec>0) then
+                      IF ( an(i,1,k,lsc(ls)) .gt. 0.0 ) THEN
+                          an(i,1,k,lscpi) = an(i,1,k,lscpi) + an(i,1,k,lsc(ls))*ec_i
+                      ELSE
+                          an(i,1,k,lscni) = an(i,1,k,lscni) - an(i,1,k,lsc(ls))*ec_i
+                      ENDIF
+                      an(i,1,k,lsc(ls)) = 0.0
+                  end if
                END IF
                IF(qg(i,k).lt.1.e-8)THEN
                   qv(i,k) = qv(i,k) + qg(i,k)
                   t(i,k) = t(i,k) - qg(i,k)*xxls/cpm
                   qg(i,k) = 0.0
+                  if (ipelec>0) then
+                      IF ( an(i,1,k,lsc(lh)) .gt. 0.0 ) THEN
+                          an(i,1,k,lscpi) = an(i,1,k,lscpi) + an(i,1,k,lsc(lh))*ec_i
+                      ELSE
+                          an(i,1,k,lscni) = an(i,1,k,lscni) - an(i,1,k,lsc(lh))*ec_i
+                      ENDIF
+                      an(i,1,k,lsc(lh)) = 0.0
+                  end if
                END IF
             END IF
             IF(qi(i,k) .lt. qsmall .or. ni(i,k) .lt. qsmall)THEN
@@ -4726,26 +4890,41 @@ CONTAINS
                ai(i,k) = 0.
                ci(i,k) = 0.
                qiloss(k) = 0.
+               if (ipelec>0) then
+                   an(i,1,k,lsc(li)) = 0.0
+               end if
             END IF
             IF(qr(i,k) .lt. qsmall .or. nr(i,k) .lt. qsmall)THEN
                qr(i,k) = 0.
                nr(i,k) = 0.
                qrloss(k) = 0.
+               if (ipelec>0) then
+                   an(i,1,k,lsc(lr)) = 0.0
+               end if
             END IF
             IF(qc(i,k) .lt. qsmall .or. nc(i,k) .lt. qsmall)THEN
                qc(i,k) = 0.
                nc(i,k) = 0.
                qcloss(k) = 0.
+               if (ipelec>0) then
+                   an(i,1,k,lsc(lc)) = 0.0
+               end if
             END IF
             IF(qs(i,k).lt.qsmall .or. ns(i,k) .lt. qsmall)THEN
                qs(i,k) = 0.0
                ns(i,k) = 0.0
                as(i,k) = 0.0
                cs(i,k) = 0.0
+               if (ipelec>0) then
+                   an(i,1,k,lsc(ls)) = 0.0
+               end if
             END IF
             IF(qg(i,k).lt.qsmall .or. ng(i,k) .lt. qsmall)THEN
                qg(i,k) = 0.0
                ng(i,k) = 0.0
+               if (ipelec>0) then
+                   an(i,1,k,lsc(lh)) = 0.0
+               end if
             END IF
 
             ni(i,k) = max(0.,ni(i,k))
