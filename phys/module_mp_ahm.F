@@ -3816,7 +3816,11 @@ CONTAINS
                 ! Collisional charging rates
                 ! Sticking eff. Collision eff assumed 1
                 exy(ls,lc) = eci ! 0.7
+                if (snowflag.eq.2) then
                 exy(ls,li) = 0.0 ! since no ice-snow collection considered
+                else if (snowflag.eq.1) then
+                    exy(ls,li) = EII ! same as collection eff since assumed 100% collision
+                end if
                 exy(lh,lc) = eci ! 0.7
                 exy(lh,li) = 0.0 ! since no graup-ice collection considered
                 exy(lh,ls) = 0.0 ! since no graup-snow collection considered
@@ -4388,12 +4392,10 @@ CONTAINS
                 !
                 !  graupel
                 !
-                pschwi =  pschwi   &
-                        & + max(schaci(i,k),0.0)   &
+                pschwi =    max(schaci(i,k),0.0)   &
                         & + max(schacs(i,k),0.0)   &
                         & + max(schacw(i,k),0.0)
-                pschwd =  pschwd   &
-                        & + min(schaci(i,k),0.0)   &
+                pschwd =    min(schaci(i,k),0.0)   &
                         & + min(schacs(i,k),0.0)   &
                         & + min(schacw(i,k),0.0)
 
@@ -5043,10 +5045,13 @@ CONTAINS
                         write(0,*)  pscr_sed(k)
                         write(0,*)  pscs_sed(k)
                         write(0,*)  pscg_sed(k)
-                        write (0,*) 'stopping'
-                        print*, 'stopping'
-                        stop
-                    endif ! >1e-6
+                        if (abs(an(i,1,k,lsc(il))).gt.100000.e-9) then
+                            write (0,*) 'Exceeding 1e-4'
+                            write (0,*) 'stopping'
+                            print*, 'stopping'
+                            stop
+                        end if
+                    end if ! >1e-6
                 enddo ! il
             end if ! ipelec            !End explicit lightning ------------------------------------------------
             !-----------------------------------------------------------------------
