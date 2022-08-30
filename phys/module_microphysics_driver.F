@@ -1799,6 +1799,11 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   ,dx=dx                              & !
                   ,dy=dy                              & !
                   ,ipelectmp = ipelectmp              & !
+                  ,umc=umc                            & !
+                  ,umr=umr                            & !
+                  ,umi=umi                            & !
+                  ,ums=ums                            & !
+                  ,umg=umg                            & !
 !!                ------------------------------ end lightning ------------------------------------
 !!                ---------------------------------------------------------------------------------
                                                                )

@@ -2559,11 +2559,13 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
            write(0,*) 'problem with noninduc! ix,jy,kz,noninduc = ',ix,jy,kz,noninduc(ix,kz,jy)
            STOP
          ENDIF
+         noninduc(ix,kz,jy) = noninduc(ix,kz,jy)/dn(ix,kz,jy) ! convert to C/kg/s
 
          IF ( .not. ( induc(ix,kz,jy) > -1.e-3 .and. induc(ix,kz,jy) < 1.e-3 ) ) THEN
            write(0,*) 'problem with induc! ix,jy,kz,induc = ',ix,jy,kz,induc(ix,kz,jy),t5(ix,1,kz)
            STOP
          ENDIF
+         induc(ix,kz,jy) = induc(ix,kz,jy)/dn(ix,kz,jy) ! convert to C/kg/s
 
 
           tmp =  dn(ix,kz,jy)*(an(ix,1,kz,lscw)+an(ix,1,kz,lscr)+an(ix,1,kz,lsci)+ &
@@ -8784,7 +8786,7 @@ END SUBROUTINE nssl_2mom_driver
         fac = 0.0
       END IF
 
-      IF ( rarfac .gt. 0.0 ) THEN
+      IF ( rarfac .gt. 0.0 ) THEN ! global rarfac=1, but passed in as -1 for isaund=12
         ibs = 0
       ELSE
         ibs = 1

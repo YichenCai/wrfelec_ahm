@@ -438,6 +438,7 @@ CONTAINS
       ,dx                             & !
       ,dy                             & !
       ,ipelectmp                      & !
+      ,umc,umr,umi,ums,umg            & !
 !!                ------------------------------ end lightning ------------------------------------
 !!                ---------------------------------------------------------------------------------
       )
@@ -549,7 +550,8 @@ CONTAINS
 !                ---------------------------------------------------------------------------------
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
               scr,scw,sci,scs,sch,sctot,scion,sciona &
-              ,csaci03d, chaci03d, chacs03d
+              ,csaci03d, chaci03d, chacs03d &
+              ,umc,umr,umi,ums,umg
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)::  &
               noninduc,induc,elec
       real, dimension(ims:ime , jms:jme),  optional, intent(inout)::  &
@@ -563,10 +565,12 @@ CONTAINS
       double precision :: chgiona1,chgiona2,chgiona3,sctot3,scwtot,scrtot,scitot,scstot,schtot,schltot
       double precision :: scwmax,scrmax,scimax,scsmax,schmax,schlmax
       double precision :: scwmin,scrmin,scimin,scsmin,schmin,schlmin
-      real, dimension(its:ite, 1, kts:kte) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d, t9
+      real, dimension(its:ite, kts:kte) :: scsacw,scsaci,schacw,schaci,schacs
+      real, dimension(its:ite) :: nonind_sum
       real, dimension(its:ite, 1, kts:kte) :: dz2d
       real, dimension(its:ite,kts:kte) :: elec2d
       real, dimension(its:ite,kts:kte) :: csaci02d, chaci02d, chacs02d
+      real umx(its:ite,kts:kte,lc:lhab) ! fall speed
 
       real :: tmp_elec, dv
       integer :: nx,ny,nz
@@ -632,11 +636,12 @@ CONTAINS
           schmin  = 0.0d0
           schlmin  = 0.0d0
 
-          t2_2d = 0.0
-          t3_2d = 0.0
-          t5_2d = 0.0
-          t6_2d = 0.0
-          t8_2d = 0.0
+          scsacw = 0.0
+          scsaci = 0.0
+          schacw = 0.0
+          schaci = 0.0
+          schacs = 0.0
+          nonind_sum = 0.0
 
           csaci03d = 0.0
           chaci03d = 0.0
@@ -644,6 +649,12 @@ CONTAINS
           csaci02d = 0.0
           chaci02d = 0.0
           chacs02d = 0.0
+
+          umc = 0.0
+          umr = 0.0
+          umi = 0.0
+          ums = 0.0
+          umg = 0.0
       END IF
 !                ------------------------------ end lightning ------------------------------------
 !                ---------------------------------------------------------------------------------
@@ -814,8 +825,9 @@ CONTAINS
          QMULTRGOUT2D, IMMERSION2D, PRAIOUT2D, CFRZR2D, QAGG2D, QNAGG2D,&
 !     ------------------------------   lightning   ------------------------------------
          an, elec2d, ipelec, j, &
-                 t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
+         scsacw,scsaci,schacw,schaci,schacs &
          ,CSACI02d,CHACI02d,CHACS02d &
+         ,umx &
 !     ------------------------------ end lightning ------------------------------------
          )
 !     ------------------------------   LIGHTNING --------------------------------------
@@ -828,8 +840,8 @@ CONTAINS
              IF ( present( noninduc ) .and. ipelec >= 1 ) THEN
                  DO k = kts,kte
                      DO i = its,ite
-                         induc(i,k,j)  = t5_2d(i,1,k) ! schacw
-                         noninduc(i,k,j) = (t2_2d(i,1,k) + t3_2d(i,1,k) + t6_2d(i,1,k) + t8_2d(i,1,k)) ! schaci + schacs
+                         induc(i,k,j)  = schacw(i,k) ! schacw
+                         noninduc(i,k,j) = schaci(i,k) + schacs(i,k) ! schaci + schacs
                          IF ( .not. ( noninduc(i,k,j) > -1.e-3 .and. noninduc(i,k,j) < 1.e-3 ) ) THEN
                              write(0,*) 'problem with noninduc! i,j,k,noninduc = ',i,j,k,noninduc(i,k,j)
                              write (0,*) 'stopping'
@@ -837,21 +849,27 @@ CONTAINS
                              STOP
                          ENDIF
                          IF ( .not. ( induc(i,k,j) > -1.e-3 .and. induc(i,k,j) < 1.e-3 ) ) THEN
-                             write(0,*) 'problem with induc! i,j,k,induc = ',i,j,k,induc(i,k,j),t5_2d(i,1,k)
+                             write(0,*) 'problem with induc! i,j,k,induc = ',i,j,k,induc(i,k,j)
                              write (0,*) 'stopping'
                              print*, 'stopping'
                              STOP
                          ENDIF
                          IF ( present( rscghis_2d ) ) THEN
-                             t9(i,1,1) = t9(i,1,1) + Abs( noninduc(i,k,j) )*dz(i,k,j)
+                             nonind_sum(i) = nonind_sum(i) + Abs( noninduc(i,k,j) )*dz(i,k,j)
                          ENDIF
                      ENDDO
                  ENDDO
                  IF ( present( rscghis_2d ) ) THEN
                      DO i = its,ite
-                         rscghis_2d(i,j) = Max( rscghis_2d(i,j), t9(i,1,1) )
+                         rscghis_2d(i,j) = Max( rscghis_2d(i,j), nonind_sum(i) )
                      ENDDO
                  ENDIF
+                 DO k = kts,kte
+                     DO i = its,ite
+                         induc(i,k,j) = induc(i,k,j)/rho(i,k,j) ! convert to C/kg/s
+                         noninduc(i,k,j) = noninduc(i,k,j)/rho(i,k,j) ! convert to C/kg/s
+                     END DO
+                 END DO
              ENDIF
 
              IF ( present( sciona ) .and. lnh > 1) THEN
@@ -895,6 +913,11 @@ CONTAINS
              csaci03d(its:ite,kts:kte,j) = csaci02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
              chaci03d(its:ite,kts:kte,j) = chaci02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
              chacs03d(its:ite,kts:kte,j) = chacs02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
+             umc(its:ite,kts:kte,j) = umx(its:ite,kts:kte,lc)
+             umr(its:ite,kts:kte,j) = umx(its:ite,kts:kte,lr)
+             umi(its:ite,kts:kte,j) = umx(its:ite,kts:kte,li)
+             ums(its:ite,kts:kte,j) = umx(its:ite,kts:kte,ls)
+             umg(its:ite,kts:kte,j) = umx(its:ite,kts:kte,lg)
 
              DO i = its,ite
                  IF ( i.le.(ids+2) .or. i.ge.(ide-2)  ) THEN
@@ -1144,8 +1167,9 @@ CONTAINS
       pgracsout, prdgout, eprdgout, evpmgout, pgmltout, qmultgout, &
       qmultrgout, immersion, praiout, cfrzr, qagg, qnagg, &
       an, elec2d, ipelec, j,&
-      t2_2d,t3_2d,t5_2d,t6_2d,t8_2d &
+      scsacw,scsaci,schacw,schaci,schacs &
       ,CSACI0,CHACI0,CHACS0 &
+      ,umx &
               )
 !****************************************************************************
 
@@ -1346,7 +1370,7 @@ CONTAINS
       ! passed in
       real, dimension(its:ite, 1, kts:kte, na), INTENT(INOUT) :: an
       real, dimension(its:ite,kts:kte), INTENT(INOUT) :: elec2d
-      real, dimension(its:ite, 1, kts:kte), INTENT(INOUT) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
+!      real, dimension(its:ite, 1, kts:kte), INTENT(INOUT) :: t2_2d,t3_2d,t5_2d,t6_2d,t8_2d
       INTEGER, INTENT(IN)  :: ipelec
       INTEGER, INTENT(IN)  :: j
 
@@ -1427,11 +1451,11 @@ CONTAINS
       real rarx(its:ite,kts:kte,ls:lhab)
 
       ! scxacy series
-      real :: scsacw(its:ite,kts:kte) ! inductive
-      real :: scsaci(its:ite,kts:kte) ! noninductive
+      real, intent(out) :: scsacw(its:ite,kts:kte) ! inductive
+      real, intent(out) :: scsaci(its:ite,kts:kte) ! noninductive
       !
-      real :: schacw(its:ite,kts:kte) ! inductive
-      real :: schaci(its:ite,kts:kte), schacs(its:ite,kts:kte) ! noninductive
+      real, intent(out) :: schacw(its:ite,kts:kte) ! inductive
+      real, intent(out) :: schaci(its:ite,kts:kte), schacs(its:ite,kts:kte) ! noninductive
       !
       real :: scxacy(its:ite,kts:kte,ls:lhab,lc:ls)
 
@@ -1595,12 +1619,6 @@ CONTAINS
           CHACI0 = 0.0
           CHACS0 = 0.0
           csaci0_morr = 0.0
-
-          t2_2d = 0.0
-          t3_2d = 0.0
-          t5_2d = 0.0
-          t6_2d = 0.0
-          t8_2d = 0.0
 
           faloutscc = 0.0
           faloutscr = 0.0
@@ -3751,6 +3769,11 @@ CONTAINS
                     end if
 
                     umx(i,k,li) = vtrmi1(i,k)
+                END IF
+
+                IF(qr(i,k).gt.qsmall.and.nr(i,k).gt.qsmall) THEN
+                    fspeed = arn(k)*cons4/(lamr**BR)
+                    umx(i,k,lr) = min(fspeed,9.1*dum)
                 END IF
 
                 an(i,1,k,lnc) = an(i,1,k,lnc) * rho(i,k) ! #/m3 consistent w/ nssl
