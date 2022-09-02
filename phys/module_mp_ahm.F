@@ -3642,10 +3642,10 @@ CONTAINS
 
                 DO il = lc,lhab
                     scx(i,k,il) = an(i,1,k,lsc(il))
-                    IF ( Abs(scx(i,k,il)) > 1000.e-9 ) THEN
-                    write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(i,k,il),an(i,1,k,il),an(i,1,k,ln(il))
-                    write(0,*) 'at it, ix,jy,kz = ',itimestep ,i, j, k
-                    ENDIF
+!                    IF ( Abs(scx(i,k,il)) > 1000.e-9 ) THEN
+!                        write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(i,k,il),an(i,1,k,il),an(i,1,k,ln(il))
+!                        write(0,*) 'at it, ix,jy,kz = ',itimestep ,i, j, k
+!                    ENDIF
                 ENDDO
                 cionp(i,k) = an(i,1,k,lscpi) ! #/m3
                 cionn(i,k) = an(i,1,k,lscni)
@@ -3674,7 +3674,7 @@ CONTAINS
                         END IF
                         xdia(i,k,ls) = 1.0/lamselec
 
-                        fspeed = asn(k)*cons3/((cons1*ns(i,k)/qs(i,k))**(1./DS))**BS
+                        fspeed = asn(k)*cons3/(lamselec**BS)
                         umx(i,k,ls) = min(fspeed,1.2*dum)
                     else if (snowflag.eq.2) then
                         anselec = as(i,k)/(nus*ns(i,k))
@@ -3736,7 +3736,7 @@ CONTAINS
                                 log(GAMMA(pgam+1.))-log(GAMMA(pgam+4.)))/cons26
                     END IF
 
-                    xdia(i,k,lc) = (6/(PI*RHOW)*qc(i,k)/nc(i,k))**(1./3.)
+                    xdia(i,k,lc) = (6/(PI*RHOW)*qc(i,k)/an(i,1,k,lnc))**(1./3.)
                     xdia(i,k,lc) = min(max(xdia(i,k,lc),1.E-6),60.E-6)
 
                     fspeed = acn(k)*GAMMA(4.+BC+PGAM)/(lamc**BC*GAMMA(PGAM+4.))
@@ -3851,7 +3851,8 @@ CONTAINS
                 temcg(i,k) = t(i,k)-273.15
 
                 IF ( ipelec .ge. 2 .or. idonic ) THEN
-                    IF ( j.gt.(jds+2) .and. j.lt.(jde-2) ) THEN
+                    IF ( j.gt.(jds+2) .and. j.lt.(jde-2) .and.&
+                         i.gt.(ids+2) .and. i.lt.(ide-2) ) THEN
                         DO il=ls,lhab ! Collector: loop through all ice habits (s,h) Collector
                             DO ic=li,ls ! Collectee: loop through all mixed phase particles (i,s)
                                 ! il=lh
@@ -3923,18 +3924,6 @@ CONTAINS
                         !
                         !  End of ice-ice loop
                         !
-                    ELSE
-                        scsacw(i,k) = 0.0
-                        scsaci(i,k) = 0.0
-
-                        schacw(i,k) = 0.0
-                        schaci(i,k) = 0.0
-                        schacs(i,k) = 0.0
-                        scxacy(i,k,:,:)=0.0
-                    END IF ! boundary check on y
-                END IF ! ipelec>=2
-
-                IF ( i.gt.(ids+2) .and. i.lt.(ide-2)  ) THEN
                     scsacw(i,k) = elecfac*scxacy(i,k,ls,lc) ! induc
                     scsaci(i,k) = elecfac*scxacy(i,k,ls,li) ! non-induc
 
@@ -3942,14 +3931,15 @@ CONTAINS
                     schaci(i,k) = elecfac*scxacy(i,k,lh,li) ! non-induc
                     schacs(i,k) = elecfac*scxacy(i,k,lh,ls) ! non-induc
                 ELSE
+                        scxacy(i,k,:,:)=0.0
                     scsacw(i,k) = 0.0
                     scsaci(i,k) = 0.0
 
                     schacw(i,k) = 0.0
                     schaci(i,k) = 0.0
                     schacs(i,k) = 0.0
-                    scxacy(i,k,:,:)=0.0
-                END IF ! x boundary check
+                    END IF ! boundary check on x,y
+                END IF ! ipelec>=2
 
                 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
                 ! Charge per hydrometeor content
@@ -4019,15 +4009,15 @@ CONTAINS
                     end if
                     if ((abs(psccimd)*dt) .gt. abs(an(i,1,k,lsc(li)))) then
                         tmp = abs(an(i,1,k,lsc(li)) / (psccimd*dt))
-                        write(0,*) 'conserving ice sci, tmp= ',tmp
-                        write(0,*) 'temper = ',T(i,k)
-                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                        write(0,*) 'psccimd, dt',psccimd, dt
-                        write(0,*) 'psccimd*dt, an(i,1,k,lsc(li))', psccimd*dt, an(i,1,k,lsc(li))
+!                        write(0,*) 'conserving ice sci, tmp= ',tmp
+!                        write(0,*) 'temper = ',T(i,k)
+!                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+!                        write(0,*) 'psccimd, dt',psccimd, dt
+!                        write(0,*) 'psccimd*dt, an(i,1,k,lsc(li))', psccimd*dt, an(i,1,k,lsc(li))
                         praci_e = tmp * praci_e
                         pracis_e = tmp * pracis_e
                         psccimd = tmp * psccimd
-                        write(0,*) 'psccimd after conserving',psccimd, psccimd*dt
+!                        write(0,*) 'psccimd after conserving',psccimd, psccimd*dt
                     end if
                 end if
 
@@ -4078,11 +4068,11 @@ CONTAINS
                     end if
                     if ((abs(psccwmd)*dt) .gt. abs(an(i,1,k,lsc(lc)))) then
                         tmp = abs(an(i,1,k,lsc(lc)) / (psccwmd*dt))
-                        write(0,*) 'conserving cloud scw, tmp= ',tmp
-                        write(0,*) 'temper = ',T(i,k)
-                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                        write(0,*) 'psccwmd, dt',psccwmd, dt
-                        write(0,*) 'psccwmd*dt, an(i,1,k,lsc(lc))', psccwmd*dt, an(i,1,k,lsc(lc))
+!                        write(0,*) 'conserving cloud scw, tmp= ',tmp
+!                        write(0,*) 'temper = ',T(i,k)
+!                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+!                        write(0,*) 'psccwmd, dt',psccwmd, dt
+!                        write(0,*) 'psccwmd*dt, an(i,1,k,lsc(lc))', psccwmd*dt, an(i,1,k,lsc(lc))
                         pra_e = tmp * pra_e
                         prc_e = tmp * prc_e
                         psacws_e = tmp * psacws_e
@@ -4091,7 +4081,7 @@ CONTAINS
                         psacwg_e = tmp * psacwg_e
                         pgsacw_e = tmp * pgsacw_e
                         psccwmd = tmp * psccwmd
-                        write(0,*) 'psccwmd after conserving',psccwmd, psccwmd*dt
+!                        write(0,*) 'psccwmd after conserving',psccwmd, psccwmd*dt
                     end if
                 end if
 
@@ -4129,15 +4119,15 @@ CONTAINS
                     end if
                     if ((abs(pscswmd)*dt) .gt. abs(an(i,1,k,lsc(ls)))) then
                         tmp = abs(an(i,1,k,lsc(ls)) / (pscswmd*dt))
-                        write(0,*) 'conserving snow scs, tmp= ',tmp
-                        write(0,*) 'temper = ',T(i,k)
-                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                        write(0,*) 'pscswmd, dt',pscswmd, dt
-                        write(0,*) 'pscswmd*dt, an(i,1,k,lsc(ls))', pscswmd*dt, an(i,1,k,lsc(ls))
+!                        write(0,*) 'conserving snow scs, tmp= ',tmp
+!                        write(0,*) 'temper = ',T(i,k)
+!                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+!                        write(0,*) 'pscswmd, dt',pscswmd, dt
+!                        write(0,*) 'pscswmd*dt, an(i,1,k,lsc(ls))', pscswmd*dt, an(i,1,k,lsc(ls))
                         psmlt_e = tmp * psmlt_e
                         psacr_e = tmp * psacr_e
                         pscswmd = tmp * pscswmd
-                        write(0,*) 'pscswmd after conserving',pscswmd, pscswmd*dt
+!                        write(0,*) 'pscswmd after conserving',pscswmd, pscswmd*dt
                     end if
                 end if
 
@@ -4173,14 +4163,14 @@ CONTAINS
                     end if
                     if ((abs(pschwmd)*dt) .gt. abs(an(i,1,k,lsc(lh)))) then
                         tmp = abs(an(i,1,k,lsc(lh)) / (pschwmd*dt))
-                        write(0,*) 'conserving graupel sch, tmp= ',tmp
-                        write(0,*) 'temper = ',T(i,k)
-                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                        write(0,*) 'pschwmd, dt',pschwmd, dt
-                        write(0,*) 'pschwmd*dt, an(i,1,k,lsc(lh))', pschwmd*dt, an(i,1,k,lsc(lh))
+!                        write(0,*) 'conserving graupel sch, tmp= ',tmp
+!                        write(0,*) 'temper = ',T(i,k)
+!                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+!                        write(0,*) 'pschwmd, dt',pschwmd, dt
+!                        write(0,*) 'pschwmd*dt, an(i,1,k,lsc(lh))', pschwmd*dt, an(i,1,k,lsc(lh))
                         pgmlt_e = tmp * pgmlt_e
                         pschwmd = tmp * pschwmd
-                        write(0,*) 'pschwmd after conserving',pschwmd, pschwmd*dt
+!                        write(0,*) 'pschwmd after conserving',pschwmd, pschwmd*dt
                     end if
                 end if
 
@@ -4241,11 +4231,11 @@ CONTAINS
                     end if
                     if ((abs(pscrwmd)*dt) .gt. abs(an(i,1,k,lsc(lr)))) then
                         tmp = abs(an(i,1,k,lsc(lr)) / (pscrwmd*dt))
-                        write(0,*) 'conserving rain scr, tmp= ',tmp
-                        write(0,*) 'temper = ',T(i,k)
-                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
-                        write(0,*) 'pscrwmd, dt',pscrwmd, dt
-                        write(0,*) 'pscrwmd*dt, an(i,1,k,lsc(lr))', pscrwmd*dt, an(i,1,k,lsc(lr))
+!                        write(0,*) 'conserving rain scr, tmp= ',tmp
+!                        write(0,*) 'temper = ',T(i,k)
+!                        write(0,*) 'i,j,k,t=',i,j,k,itimestep
+!                        write(0,*) 'pscrwmd, dt',pscrwmd, dt
+!                        write(0,*) 'pscrwmd*dt, an(i,1,k,lsc(lr))', pscrwmd*dt, an(i,1,k,lsc(lr))
                         pracs1_e = tmp * pracs1_e
                         qmultr_e = tmp * qmultr_e
                         qmultrg_e = tmp * qmultrg_e
@@ -4256,7 +4246,7 @@ CONTAINS
                         pracs_e = tmp * pracs_e
                         pracg_e = tmp * pracg_e
                         pscrwmd = tmp * pscrwmd
-                        write(0,*) 'pscrwmd after conserving',pscrwmd, pscrwmd*dt
+!                        write(0,*) 'pscrwmd after conserving',pscrwmd, pscrwmd*dt
                     end if
                 end if
 
@@ -4428,6 +4418,9 @@ CONTAINS
                         write (0,*) 'i,j,k,t=',i,j,k,itimestep
                         write (0,*) 'scx(k,iltest)=',scx(i,k,iltest)
                         write (0,*) 'an(i,1,k,lsc(il))=',an(i,1,k,lsc(il))
+                        write(0,*) 'stopping'
+                        print*, 'stopping'
+                        STOP
                     end if
                 end do
 
@@ -4442,6 +4435,16 @@ CONTAINS
                         &   dt*(pscswi + pscswd + pscswmi + pscswmd)
                 scx(i,k,lh) = scx(i,k,lh) +   &
                         &   dt*(pschwi + pschwd + pschwmi + pschwmd)
+!                scx(i,k,lc) = scx(i,k,lc) +   &
+!                        &   dt*(psccwi + psccwd)
+!                scx(i,k,li) = scx(i,k,li) +   &
+!                        &   dt*(psccii + psccid)
+!                scx(i,k,lr) = scx(i,k,lr) +   &
+!                        &   dt*(pscrwi + pscrwd)
+!                scx(i,k,ls) = scx(i,k,ls) +   &
+!                        &   dt*(pscswi + pscswd)
+!                scx(i,k,lh) = scx(i,k,lh) +   &
+!                        &   dt*(pschwi + pschwd)
 
                 cionp(i,k) = cionp(i,k) +  &
                         &   dt*ec_i*(pscpii + pscpid) ! #/m3 * C / C/m3. ! each ion has electron charge
@@ -4482,7 +4485,7 @@ CONTAINS
                 DO il = lc,lhab
                     tmp = an(i,1,k,lsc(il))
                     an(i,1,k,lsc(il)) = scx(i,k,il)
-                    IF (.not.( Abs (scx(i,k,il) ) < 1000.e-9  )) THEN
+                    IF (.not.( Abs (scx(i,k,il) ) < 1.e-6  )) THEN
                         write(0,*) 'Problem0a with scx il = ',il,lsc(il),scx(i,k,il)
                         write(0,*) 'Problem2 with scx il = ',tmp,tmp-scx(i,k,il),(tmp-scx(i,k,il))*dtpinv
                         write(0,*) 'temper = ',T(i,k)
@@ -4816,6 +4819,11 @@ CONTAINS
                 dumsc(k,lsc(li)) = an(i,1,k,lsc(li))
                 dumsc(k,lsc(ls)) = an(i,1,k,lsc(ls))
                 dumsc(k,lsc(lg)) = an(i,1,k,lsc(lg))
+                pscc_sed(k) = 0.0
+                pscr_sed(k) = 0.0
+                psci_sed(k) = 0.0
+                pscs_sed(k) = 0.0
+                pscg_sed(k) = 0.0
             end if
             !End explicit lightning ------------------------------------------------
             !-----------------------------------------------------------------------
@@ -5055,7 +5063,7 @@ CONTAINS
                 an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + pscs_sed(k)*dt
                 an(i,1,k,lsc(lh)) = an(i,1,k,lsc(lh)) + pscg_sed(k)*dt
                 do il = lc,lhab
-                    if (.not.( abs (an(i,1,k,lsc(il)) ) < 1000.e-9  )) then
+                    if (.not.( abs (an(i,1,k,lsc(il)) ) < 1.e-6  )) then
                         write(0,*) 'problem0a with scx after sedi.'
                         write(0,*) 'il, lsc(il), = ',il,lsc(il),an(i,1,k,lsc(il))
                         write(0,*) 'new, old = ',an(i,1,k,lsc(il)), tmpsc(k,lsc(il))
@@ -5068,13 +5076,10 @@ CONTAINS
                         write(0,*)  pscr_sed(k)
                         write(0,*)  pscs_sed(k)
                         write(0,*)  pscg_sed(k)
-                        if (abs(an(i,1,k,lsc(il))).gt.100000.e-9) then
-                            write (0,*) 'Exceeding 1e-4'
-                            write (0,*) 'stopping'
-                            print*, 'stopping'
-                            stop
-                        end if
-                    end if ! >1e-6
+                        write(0,*) 'stopping'
+                        print*, 'stopping'
+                        stop
+                    endif ! >1e-6
                 enddo ! il
             end if ! ipelec            !End explicit lightning ------------------------------------------------
             !-----------------------------------------------------------------------
