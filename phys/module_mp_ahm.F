@@ -574,6 +574,7 @@ CONTAINS
 
       real :: tmp_elec, dv
       integer :: nx,ny,nz
+      integer :: snowflag
 
 
 #ifdef MPI
@@ -824,8 +825,8 @@ CONTAINS
          PRDGOUT2D, EPRDGOUT2D, EVPMGOUT2D, PGMLTOUT2D, QMULTGOUT2D,  &
          QMULTRGOUT2D, IMMERSION2D, PRAIOUT2D, CFRZR2D, QAGG2D, QNAGG2D,&
 !     ------------------------------   lightning   ------------------------------------
-         an, elec2d, ipelec, j, &
-         scsacw,scsaci,schacw,schaci,schacs &
+         an, elec2d, ipelec, j, snowflag &
+         ,scsacw,scsaci,schacw,schaci,schacs &
          ,CSACI02d,CHACI02d,CHACS02d &
          ,umx &
 !     ------------------------------ end lightning ------------------------------------
@@ -878,6 +879,8 @@ CONTAINS
                          &  ,0,0 &
                          &  ,dt,dz2d &
                          &  ,an &
+                         &  ,rhos2d,rhoice2d &
+                         &  ,snowflag &
                          &  )
              ENDIF
 
@@ -1166,8 +1169,8 @@ CONTAINS
       piacrsout, pracisout, pracgout, psacwgout, pgsacwout,        &
       pgracsout, prdgout, eprdgout, evpmgout, pgmltout, qmultgout, &
       qmultrgout, immersion, praiout, cfrzr, qagg, qnagg, &
-      an, elec2d, ipelec, j,&
-      scsacw,scsaci,schacw,schaci,schacs &
+      an, elec2d, ipelec, j, snowflag&
+      ,scsacw,scsaci,schacw,schaci,schacs &
       ,CSACI0,CHACI0,CHACS0 &
       ,umx &
               )
@@ -9887,13 +9890,15 @@ CONTAINS
                   &  ,nor,norz &
                   &  ,dtp,dz3d &
                   &  ,an &
+                  &  ,rhos2d,rhoice2d &
+                  &  ,snowflag &
                   &  )
 
               implicit none
 
               integer :: nx,ny,nz,na
               integer :: ng
-              integer :: nor,norz, jyslab ! ,nht,ngt,igsr
+              integer :: nor,norz, jyslab, snowflag ! ,nht,ngt,igsr
               real    :: dtp  ! time step
 
 
@@ -9902,8 +9907,8 @@ CONTAINS
               !
 
               real an(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz,na)
-
               real dz3d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+1:nz+norz)
+              REAL, DIMENSION(-nor+1:nx+nor, -norz+1:nz+norz) :: rhos2d,rhoice2d
 
               ! local
 
@@ -9925,11 +9930,10 @@ CONTAINS
               !        real    :: rhor = 1000.
               !        real    :: rhoi = 900.
               !        real    :: rhow = 1000.
-              ! density defined in morr
-              real    :: rhos = 100.
+              real    :: rhos
               real    :: rhog = 400.
               real    :: rhor = 997.
-              real    :: rhoi = 500. ! the most different
+              real    :: rhoi
               real    :: rhow = 997.
 
               logical, parameter :: dampicecharge = .false.    ! whether to apply charge damping to cloud ice and snow (WRF ONLY)
@@ -9944,6 +9948,12 @@ CONTAINS
               DO kz = 1,nz
                   DO jy = 1,1
                       DO ix = 1,nx
+                          rhoi = rhoice2d(ix,kz)
+                          if (snowflag.eq.1) then
+                              rhos = 100.
+                          else if (snowflag.eq.2) then
+                              rhos = rhos2d(ix,kz)
+                          end if
                           IF ( an(ix,jy,kz,lscpi) - an(ix,jy,kz,lscni) /= 0.0 ) THEN
                               fracs = 0.0
                               fraci = 0.0
