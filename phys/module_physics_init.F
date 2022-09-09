@@ -3842,7 +3842,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
      CASE (SULIAHARRINGTON)
          CALL suliaharrington_init
      CASE (AHM)
-         CALL ahm_init(nssl_params)
+         CALL ahm_init(config_flags%hail_opt,nssl_params)
      CASE (P3_1CATEGORY)
          CALL p3_init('./p3_lookup_table_1.dat','./p3_lookup_table_2.dat',1)
      CASE (P3_1CATEGORY_NC)

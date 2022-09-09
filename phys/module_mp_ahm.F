@@ -50,6 +50,12 @@
       REAL, PRIVATE :: RIN      !ICE NUCLEAITON RADIUS,CONTACT
 !                                 FREEZING, MEYERS
 
+      ! HM NEW OPTION FOR HAIL
+      ! SWITCH FOR HAIL/GRAUPEL
+      ! IHAIL = 0, DENSE PRECIPITATING ICE IS GRAUPEL
+      ! IHAIL = 1, DENSE PRECIPITATING GICE IS HAIL
+      INTEGER, PRIVATE ::  IHAIL
+
 !     parameters for snow microphysics
       REAL, PRIVATE ::  DCS     !THRESHOLD AGGREGATION RADIUS
       REAL, PRIVATE ::  BS      !SNOW FALLSPEED PARAMETER
@@ -172,10 +178,11 @@ CONTAINS
 !     NEEDS TO BE CALLED AT FIRST TIMESTEP,
 !     PRIOR TO CALL TO MAIN MICROPHYSICS INTERFACE
 !-------------------------------------------------------------------------------------
-      SUBROUTINE AHM_INIT(nssl_params,idonictmp)
+      SUBROUTINE AHM_INIT(hail_opt,nssl_params,idonictmp)
 !************************************************************************************
 
       IMPLICIT NONE
+      INTEGER, INTENT(IN):: hail_opt ! RAS
       !---------------------------------------------------------------------------
       !Explicit lightning --------------------------------------------------------
       real, intent(in), dimension(20) :: nssl_params ! for lightning
@@ -245,7 +252,21 @@ CONTAINS
           END IF
       ENDIF
       !---------------------------------------------------------------------------
-      !End explicit lightning --------------------------------------------------------
+      !End explicit lightning ----------------------------------------------------
+
+      ! yc added 9/6/2022
+      ! switch for hail/graupel
+      ! ihail = 0, dense precipitating ice is graupel
+      ! ihail = 1, dense precipitating ice is hail
+      ! note ---> recommend ihail = 1 for continental deep convection
+
+      !IHAIL = 0 !changed to namelist option (hail_opt) by RAS
+      ! Check if namelist option is feasible, otherwise default to graupel - RAS
+      IF (hail_opt .eq. 1) THEN
+          IHAIL = 1
+      ELSE
+          IHAIL = 0
+      ENDIF
 
       rhoi = 920.
 !     rhoi = 500.
@@ -279,9 +300,15 @@ CONTAINS
       f2s = 0.28
 
 !     add constants for graupel microphysics !kjs 02/10/2015
+      IF (IHAIL.EQ.0) THEN
       RHOG = 400.
       AG = 19.3
       BG = 0.37
+      ELSE ! (MATSUN AND HUGGINS 1980)
+          RHOG = 900.
+          AG = 114.5
+          BG = 0.5
+      END IF
       CG = RHOG*pi/6.
       DG = 3.
       ECI = 0.7
@@ -873,16 +900,16 @@ CONTAINS
                  END DO
              ENDIF
 
-             IF ( present( sciona ) .and. lnh > 1) THEN
-                 CALL SCIONATT    &
-                         &  (nx,ny,nz,na,j &
-                         &  ,0,0 &
-                         &  ,dt,dz2d &
-                         &  ,an &
-                         &  ,rhos2d,rhoice2d &
-                         &  ,snowflag &
-                         &  )
-             ENDIF
+!             IF ( present( sciona ) ) THEN
+!                 CALL SCIONATT    &
+!                         &  (nx,ny,nz,na,j &
+!                         &  ,0,0 &
+!                         &  ,dt,dz2d &
+!                         &  ,an &
+!                         &  ,rhos2d,rhoice2d &
+!                         &  ,snowflag &
+!                         &  )
+!             ENDIF
 
              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
              !!!  Collect into chg...2 (an[m-3])
@@ -4428,26 +4455,26 @@ CONTAINS
                 end do
 
                 ! update scx array
-                scx(i,k,lc) = scx(i,k,lc) +   &
-                        &   dt*(psccwi + psccwd + psccwmi + psccwmd)
-                scx(i,k,li) = scx(i,k,li) +   &
-                        &   dt*(psccii + psccid + psccimi + psccimd)
-                scx(i,k,lr) = scx(i,k,lr) +   &
-                        &   dt*(pscrwi + pscrwd + pscrwmi + pscrwmd)
-                scx(i,k,ls) = scx(i,k,ls) +   &
-                        &   dt*(pscswi + pscswd + pscswmi + pscswmd)
-                scx(i,k,lh) = scx(i,k,lh) +   &
-                        &   dt*(pschwi + pschwd + pschwmi + pschwmd)
 !                scx(i,k,lc) = scx(i,k,lc) +   &
-!                        &   dt*(psccwi + psccwd)
+!                        &   dt*(psccwi + psccwd + psccwmi + psccwmd)
 !                scx(i,k,li) = scx(i,k,li) +   &
-!                        &   dt*(psccii + psccid)
+!                        &   dt*(psccii + psccid + psccimi + psccimd)
 !                scx(i,k,lr) = scx(i,k,lr) +   &
-!                        &   dt*(pscrwi + pscrwd)
+!                        &   dt*(pscrwi + pscrwd + pscrwmi + pscrwmd)
 !                scx(i,k,ls) = scx(i,k,ls) +   &
-!                        &   dt*(pscswi + pscswd)
+!                        &   dt*(pscswi + pscswd + pscswmi + pscswmd)
 !                scx(i,k,lh) = scx(i,k,lh) +   &
-!                        &   dt*(pschwi + pschwd)
+!                        &   dt*(pschwi + pschwd + pschwmi + pschwmd)
+                scx(i,k,lc) = scx(i,k,lc) +   &
+                        &   dt*(psccwi + psccwd)
+                scx(i,k,li) = scx(i,k,li) +   &
+                        &   dt*(psccii + psccid)
+                scx(i,k,lr) = scx(i,k,lr) +   &
+                        &   dt*(pscrwi + pscrwd)
+                scx(i,k,ls) = scx(i,k,ls) +   &
+                        &   dt*(pscswi + pscswd)
+                scx(i,k,lh) = scx(i,k,lh) +   &
+                        &   dt*(pschwi + pschwd)
 
                 cionp(i,k) = cionp(i,k) +  &
                         &   dt*ec_i*(pscpii + pscpid) ! #/m3 * C / C/m3. ! each ion has electron charge
@@ -9940,10 +9967,10 @@ CONTAINS
               real, parameter    :: dampchargethresh = 0.09e-9 ! charge density magnitude at which damping stops
               real, parameter    :: dampchargetimeconst = 3600. ! time constant for charge damping
 
-              IF ( lnh < 1 ) THEN ! not double-moment
-                  RETURN
-              ENDIF
-              !        IF (IHAIL.EQ.1)  RHOG = 900.
+        if ( lnh < 1 ) then ! not double-moment
+            return
+        endif
+        if (ihail.eq.1)  rhog = 900.
 
               DO kz = 1,nz
                   DO jy = 1,1
@@ -9991,11 +10018,6 @@ CONTAINS
                                   IF (frach > 0) then
                                       an(ix,jy,kz,lsch) = an(ix,jy,kz,lsch) + tmpion*(frach/fractot)
                                   ENDIF
-
-                                  !                            IF (lnhl > 1 .and. frachl > 0 ) then
-                                  !                                an(ix,jy,kz,lschl) = an(ix,jy,kz,lschl) + tmpion*(frachl/fractot)
-                                  !                            ENDIF
-
 
                                   an(ix,jy,kz,lscpi) = 0.0
                                   an(ix,jy,kz,lscni) = 0.0
