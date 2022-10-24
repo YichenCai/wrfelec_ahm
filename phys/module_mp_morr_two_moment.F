@@ -1760,6 +1760,8 @@ CONTAINS
                 !!!!      End "denscale" list
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+                sciona(its:ite,kts:kte,j) = (an(ix,1,kz,lscpi) - an(ix,1,kz,lscni))&
+                        * ec / rho_igl(its:ite,kts:kte,j)
                 scw(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscw)
                 scr(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscr)
                 sci(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lsci)
@@ -2511,7 +2513,6 @@ CONTAINS
         gf4p5 = 11.63172839656745 ! gamma(4.0+0.5)
         gf3p5 = 3.32335097 ! gamma(3.5)
         gf1p5 = 0.8862269255  ! gamma(1.5)
-        print*, DA0LH,DA0LI,DA0LS
 
         DO K = KTS,KTE
         dezcomp(k) = Max(-1.00e5, Min(elec1d(k),1.00e5) ) ! Ez is passed (elecsave)
