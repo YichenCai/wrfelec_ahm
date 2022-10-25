@@ -938,12 +938,13 @@ CONTAINS
                 sci(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lsci) / RHO2D(its:ite,kts:kte)
                 scs(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscs) / RHO2D(its:ite,kts:kte)
                 sch(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lsch) / RHO2D(its:ite,kts:kte)
-                sctot(its:ite,kts:kte,j)  = scw(its:ite,kts:kte,j) &
+             sctot(its:ite,kts:kte,j)  = RHO2D(its:ite,kts:kte)* (&
+                                         scw(its:ite,kts:kte,j) &
                         +scr(its:ite,kts:kte,j) &
                         +sci(its:ite,kts:kte,j) &
                         +scs(its:ite,kts:kte,j) &
                         +sch(its:ite,kts:kte,j) &
-                        +sciona(its:ite,kts:kte,j) ! to get C/m3 for RHS calc later on
+                                        +sciona(its:ite,kts:kte,j) ) ! to get C/m3 for RHS calc later on
                 csaci03d(its:ite,kts:kte,j) = csaci02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
                 chaci03d(its:ite,kts:kte,j) = chaci02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
                 chacs03d(its:ite,kts:kte,j) = chacs02d(its:ite,kts:kte)/RHO2D(its:ite,kts:kte)
