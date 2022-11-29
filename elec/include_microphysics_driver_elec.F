@@ -7,6 +7,9 @@
 
      elec(:,:,:,:)=0.
      elecmag(:,:,:)=0.
+     if (mp_physics==MORR_TWO_MOMENT .or. mp_physics==AHM) then
+         schl(:,:,:) = 0.
+     end if
 
 !    add up flashes up to history dump 
 
