@@ -46,47 +46,9 @@ state    real    umg             ikj  misc    1         -     irh         "umg" 
 state    real    umh             ikj  misc    1         -     irh         "umh"                     "hail    fall speed"     "m s-1"
 state    real    rhog            ikj  misc    1         -     irh         "rhog"                    "graupel density"        "m s-1"
 state    real    rhoh            ikj  misc    1         -     irh         "rhoh"                    "hail    density"        "m s-1"
-state    real    QGSTEN3D            ikj  misc    1         -     irh         "QGSTEN3D"                    "graup sed rate"        "s-1"
-state    real    QRSTEN3D            ikj  misc    1         -     irh         "QRSTEN3D"                    "rain sed rate"        "s-1"
-state    real    QISTEN3D            ikj  misc    1         -     irh         "QISTEN3D"                    "ice sed rate"        "s-1"
-state    real    QNISTEN3D            ikj  misc    1         -     irh         "QNISTEN3D"                    "snow sed rate"        "s-1"
-state    real    QCSTEN3D            ikj  misc    1         -     irh         "QCSTEN3D"                    "droplet sed rate"        "s-1"
-state    real    PRD3d            ikj  misc    1         -     irh         "PRD3d"                    "DEP CLOUD ICE"        "s-1"
-state    real    PRE3d            ikj  misc    1         -     irh         "PRE3d"                    "EVAP OF RAIN"        "s-1"
-state    real    PRDS3d            ikj  misc    1         -     irh         "PRDS3d"                    "DEP SNOW"        "s-1"
-state    real    MNUCCC3d            ikj  misc    1         -     irh         "MNUCCC3d"                    "CHANGE Q DUE TO CONTACT FREEZ DROPLETS"        "s-1"
-state    real    PRA3d            ikj  misc    1         -     irh         "PRA3d"                    "ACCRETION DROPLETS BY RAIN"        "s-1"
-state    real    PRC3d            ikj  misc    1         -     irh         "PRC3d"                    "AUTOCONVERSION DROPLETS"        "s-1"
-state    real    PCC3d            ikj  misc    1         -     irh         "PCC3d"                    "COND/EVAP DROPLETS"        "s-1"
-state    real    MNUCCD3d            ikj  misc    1         -     irh         "MNUCCD3d"                    "CHANGE Q FREEZING AEROSOL (PRIM ICE NUCLEATION)"        "s-1"
-state    real    MNUCCR3d            ikj  misc    1         -     irh         "MNUCCR3d"                    "CHANGE Q DUE TO CONTACT FREEZ RAIN"        "s-1"
-state    real    PRAI3d            ikj  misc    1         -     irh         "PRAI3d"                    "CHANGE Q ACCRETION CLOUD ICE BY SNOW"        "s-1"
-state    real    PRCI3d            ikj  misc    1         -     irh         "PRCI3d"                    "CHANGE Q AUTOCONVERSIN CLOUD ICE TO SNOW"        "s-1"
-state    real    PSACWS3d            ikj  misc    1         -     irh         "PSACWS3d"                    "CHANGE Q DROPLET ACCRETION BY SNOW"        "s-1"
-state    real    PSACWI3d            ikj  misc    1         -     irh         "PSACWI3d"                    "CHANGE Q DROPLET ACCRETION BY CLOUD ICE"        "s-1"
-state    real    QMULTS3d            ikj  misc    1         -     irh         "QMULTS3d"                    "CHANGE Q DUE TO ICE MULT DROPLETS/SNOW"        "s-1"
-state    real    QMULTR3d            ikj  misc    1         -     irh         "QMULTR3d"                    "CHANGE Q DUE TO ICE RAIN/SNOW"        "s-1"
-state    real    PRACS3d            ikj  misc    1         -     irh         "PRACS3d"                    "CHANGE Q RAIN-SNOW COLLECTION"        "s-1"
-state    real    PCCN3d            ikj  misc    1         -     irh         "PCCN3d"                    "CHANGE Q DROPLET ACTIVATION"        "s-1"
-state    real    PSMLT3d            ikj  misc    1         -     irh         "PSMLT3d"                    "CHANGE Q MELTING SNOW TO RAIN"        "s-1"
-state    real    EVPMS3d            ikj  misc    1         -     irh         "EVPMS3d"                    "CHNAGE Q MELTING SNOW EVAPORATING"        "s-1"
-state    real    PIACR3d            ikj  misc    1         -     irh         "PIACR3d"                    "CHANGE QR, ICE-RAIN COLLECTION"        "s-1"
-state    real    PRACI3d            ikj  misc    1         -     irh         "PRACI3d"                    "CHANGE QI, ICE-RAIN COLLECTION"        "s-1"
-state    real    PIACRS3d            ikj  misc    1         -     irh         "PIACRS3d"                    "CHANGE QR, ICE RAIN COLLISION, ADDED TO SNOW"        "s-1"
-state    real    PRACIS3d            ikj  misc    1         -     irh         "PRACIS3d"                    "CHANGE QI, ICE RAIN COLLISION, ADDED TO SNOW"        "s-1"
-state    real    EPRD3d            ikj  misc    1         -     irh         "EPRD3d"                    "SUBLIMATION CLOUD ICE"        "s-1"
-state    real    EPRDS3d            ikj  misc    1         -     irh         "EPRDS3d"                    "SUBLIMATION SNOW"        "s-1"
-state    real    PRACG3d            ikj  misc    1         -     irh         "PRACG3d"                    "CHANGE IN Q COLLECTION RAIN BY GRAUPEL"        "s-1"
-state    real    PSACWG3d            ikj  misc    1         -     irh         "PSACWG3d"                    "CHANGE IN Q COLLECTION DROPLETS BY GRAUPEL"        "s-1"
-state    real    PGSACW3d            ikj  misc    1         -     irh         "PGSACW3d"                    "CONVERSION Q TO GRAUPEL DUE TO COLLECTION DROPLETS BY SNOW"        "s-1"
-state    real    PGRACS3d            ikj  misc    1         -     irh         "PGRACS3d"                    "CONVERSION Q TO GRAUPEL DUE TO COLLECTION RAIN BY SNOW"        "s-1"
-state    real    PRDG3d            ikj  misc    1         -     irh         "PRDG3d"                    "DEP OF GRAUPEL"        "s-1"
-state    real    EPRDG3d            ikj  misc    1         -     irh         "EPRDG3d"                    "SUB OF GRAUPEL"        "s-1"
-state    real    EVPMG3d            ikj  misc    1         -     irh         "EVPMG3d"                    "CHANGE Q MELTING OF GRAUPEL AND EVAPORATION"        "s-1"
-state    real    PGMLT3d            ikj  misc    1         -     irh         "PGMLT3d"                    "CHANGE Q MELTING OF GRAUPEL"        "s-1"
-state    real    PSACR3d            ikj  misc    1         -     irh         "PSACR3d"                    "CONVERSION DUE TO COLL OF SNOW BY RAIN"        "s-1"
-state    real    QMULTG3d            ikj  misc    1         -     irh         "QMULTG3d"                    "CHANGE Q DUE TO ICE MULT DROPLETS/GRAUPEL"        "s-1"
-state    real    QMULTRG3d            ikj  misc    1         -     irh         "QMULTRG3d"                    "CHANGE Q DUE TO ICE MULT RAIN/GRAUPEL"        "s-1"
+state    real    schaci        ikj  misc    1         -     irh         "schaci"               "Graupel charging rate from ice"     "C m-3 s-1"
+state    real    schacs        ikj  misc    1         -     irh         "schacs"               "Graupel charging rate from snow"     "C m-3 s-1"
+state    real    scsaci        ikj  misc    1         -     irh         "scsaci"               "Snow charging rate from ice"     "C m-3 s-1"
 # END EXPLICIT LIGHTNING
 
 
@@ -105,7 +67,6 @@ rconfig   integer  elec_physics           namelist,physics      1            0  
 
 # external WRF-ELEC package
 package   noelec             elec_physics==0             -             -
-package   eleclgt1d          elec_physics==1             -             scalar:scr,scw,sci,scs,sch,schl,sciona;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D,PRD3d,PRE3d,PRDS3d,MNUCCC3d,PRA3d,PRC3d,PCC3d,MNUCCD3d,MNUCCR3d,PRAI3d,PRCI3d,PSACWS3d,PSACWI3d,QMULTS3d,QMULTR3d,PRACS3d,PCCN3d,PSMLT3d,EVPMS3d,PIACR3d,PRACI3d,PIACRS3d,PRACIS3d,EPRD3d,EPRDS3d,PRACG3d,PSACWG3d,PGSACW3d,PGRACS3d,PRDG3d,EPRDG3d,EVPMG3d,PGMLT3d,PSACR3d,QMULTG3d,QMULTRG3d
-package   eleclgtmsz         elec_physics==2             -             scalar:scr,scw,sci,scs,sch,schl,sciona;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,flshi,flshn,flshp,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D,PRD3d,PRE3d,PRDS3d,MNUCCC3d,PRA3d,PRC3d,PCC3d,MNUCCD3d,MNUCCR3d,PRAI3d,PRCI3d,PSACWS3d,PSACWI3d,QMULTS3d,QMULTR3d,PRACS3d,PCCN3d,PSMLT3d,EVPMS3d,PIACR3d,PRACI3d,PIACRS3d,PRACIS3d,EPRD3d,EPRDS3d,PRACG3d,PSACWG3d,PGSACW3d,PGRACS3d,PRDG3d,EPRDG3d,EVPMG3d,PGMLT3d,PSACR3d,QMULTG3d,QMULTRG3d
-package   eleclgtmsznox      elec_physics==3             -             scalar:scr,scw,sci,scs,sch,schl,sciona,clnox;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,flshi,flshn,flshp,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D,PRD3d,PRE3d,PRDS3d,MNUCCC3d,PRA3d,PRC3d,PCC3d,MNUCCD3d,MNUCCR3d,PRAI3d,PRCI3d,PSACWS3d,PSACWI3d,QMULTS3d,QMULTR3d,PRACS3d,PCCN3d,PSMLT3d,EVPMS3d,PIACR3d,PRACI3d,PIACRS3d,PRACIS3d,EPRD3d,EPRDS3d,PRACG3d,PSACWG3d,PGSACW3d,PGRACS3d,PRDG3d,EPRDG3d,EVPMG3d,PGMLT3d,PSACR3d,QMULTG3d,QMULTRG3d
-
+package   eleclgt1d          elec_physics==1             -             scalar:scr,scw,sci,scs,sch,schl,sciona;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,schaci,schacs,scsaci
+package   eleclgtmsz         elec_physics==2             -             scalar:scr,scw,sci,scs,sch,schl,sciona;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,flshi,flshn,flshp,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,schaci,schacs,scsaci
+package   eleclgtmsznox      elec_physics==3             -             scalar:scr,scw,sci,scs,sch,schl,sciona,clnox;state:rscghis_2d,sctot,noninduc,induc,pot,elecmag,elecx,elecy,elecz,light,lightdens,lightdis,flshi,flshn,flshp,csaci03d,chaci03d,chacs03d,csaci03d_morr,umc,umr,umi,ums,umg,umh,rhog,rhoh,schaci,schacs,scsaci
