@@ -671,7 +671,18 @@
        
        IF ( .true. ) THEN ! put the lightning charge into sciona, which is then distributed to hydrometeors in the ionattach subroutine
        
-        
+!       if (sctot(ix,kz,jy) .gt.  chgthr) then
+!           write(0,*) "ix,jy,kz: ", ix,jy,kz
+!           write(0,*) "sciona bf update: ", sciona(ix,kz,jy)
+!           sciona(ix,kz,jy)=sciona(ix,kz,jy)-scdisch(ix,jy,kz)
+!           write(0,*) "sciona af update: ", sciona(ix,kz,jy)
+!       endif
+!       if (sctot(ix,kz,jy) .lt. -chgthr) then
+!           write(0,*) "ix,jy,kz: ", ix,jy,kz
+!           write(0,*) "sciona bf update: ", sciona(ix,kz,jy)
+!           sciona(ix,kz,jy)=sciona(ix,kz,jy)+scdisch(ix,jy,kz)
+!           write(0,*) "sciona af update: ", sciona(ix,kz,jy)
+!       endif
       if (sctot(ix,kz,jy) .gt.  chgthr) sciona(ix,kz,jy)=sciona(ix,kz,jy)-scdisch(ix,jy,kz)
       if (sctot(ix,kz,jy) .lt. -chgthr) sciona(ix,kz,jy)=sciona(ix,kz,jy)+scdisch(ix,jy,kz)
       

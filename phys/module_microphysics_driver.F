@@ -89,12 +89,13 @@ SUBROUTINE microphysics_driver(                                          &
                       ,f_qnic,f_qnip,f_qnid &
                       ,f_qir,f_qib                                       & ! for P3
                       ,f_effr,f_ice_effr,f_tot_effr                      &
-                      ,f_qic_effr,f_qip_effr,f_qid_effr                  &                 
+                      ,f_qic_effr,f_qip_effr,f_qid_effr                  &
                       ,scr,scw,sci,scs,sch,schl,sciona,sctot             &
         ! processes rates for morr/nssl
                       ,csaci03d,chaci03d,chacs03d, csaci03d_morr         &
                       ,umc,umr,umi,ums,umg,umh                           &
                       ,rhog,rhoh                                    &
+                      ,schaci,schacs,scsaci                         &
                     ,QGSTEN3D & ! yc added 10/07/2021 for sedimentation rates
                     ,QRSTEN3D &
                     ,QISTEN3D &
@@ -651,6 +652,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                                                    ,csaci03d,chaci03d,chacs03d, csaci03d_morr       & ! yc added 9/23/2020 for i-g and s-g collision rates
                                                    ,umc,umr,umi,ums,umg,umh                         & ! yc added 9/08/2021 fall speed
                                                    ,rhog,rhoh                                  & ! yc added 9/08/2021 hydrometeor density from nssl2m
+                                                   ,schaci,schacs,scsaci                         &
                                              ,QGSTEN3D & ! yc added 10/07/2021 for sedimentation rates
                                              ,QRSTEN3D &
                                              ,QISTEN3D &
@@ -1339,6 +1341,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      ,umi = umi &!
                      ,ums = ums &!
                      ,umg = umg &!
+!                     ,schaci3d = schaci &
+!                     ,schacs3d = schacs &
+!                     ,scsaci3d = scsaci &
                      ,QGSTEN3D = QGSTEN3D &
                      ,QRSTEN3D = QRSTEN3D &
                      ,QISTEN3D = QISTEN3D &
@@ -1438,14 +1443,14 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          PRESENT (FRZNACC) .AND. PRESENT (FRZNACCT) .AND.  &
          PRESENT (PHI)   .AND.         &
          PRESENT (RELH)                                          )THEN
-         do i=ims,ime
-         do k=kms,kme
-         do j=jms,jme
-         if(isnan(pi_phy(i,k,j)))print*,'before pii',real(itimestep)*dt,i,k,j,pi_phy(i,k,j)
-
-         end do
-         end do
-         end do
+!         do i=ims,ime
+!         do k=kms,kme
+!         do j=jms,jme
+!         if(isnan(pi_phy(i,k,j)))print*,'before pii',real(itimestep)*dt,i,k,j,pi_phy(i,k,j)
+!
+!         end do
+!         end do
+!         end do
 
 
           CALL mp_suliaharrington(                       &
@@ -1580,14 +1585,14 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          PRESENT (FRZNACC) .AND. PRESENT (FRZNACCT) .AND.  &
          PRESENT (PHI)   .AND.         &
          PRESENT (RELH)                                          )THEN
-         do i=ims,ime
-         do k=kms,kme
-         do j=jms,jme
-         if(isnan(pi_phy(i,k,j)))print*,'before pii',real(itimestep)*dt,i,k,j,pi_phy(i,k,j)
-
-         end do
-         end do
-         end do
+!         do i=ims,ime
+!         do k=kms,kme
+!         do j=jms,jme
+!         if(isnan(pi_phy(i,k,j)))print*,'before pii',real(itimestep)*dt,i,k,j,pi_phy(i,k,j)
+!
+!         end do
+!         end do
+!         end do
 
 
          IF ( elec_physics == 0 ) THEN
@@ -1790,6 +1795,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   ,CSACI03D = csaci03d                &
                   ,CHACI03D = chaci03d                &
                   ,CHACS03D = chacs03d                &
+                  ,schaci3d = schaci &
+                  ,schacs3d = schacs &
+                  ,scsaci3d = scsaci &
                   ,NONINDUC = noninduc                & ! A
                   ,rscghis_2d = rscghis_2d            & ! D
                   ,INDUC = induc                      & ! D
@@ -2246,6 +2254,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      CSACI03D = csaci03d,                &
                      CHACI03D = chaci03d,                &
                      CHACS03D = chacs03d,                &
+!                     schaci3d = schaci,                  &
+!                     schacs3d = schacs,                  &
+!                     scsaci3d = scsaci,                  &
                      umc = umc,                          &
                      umr = umr,                          &
                      umi = umi,                          &
@@ -2498,6 +2509,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      CSACI03D = csaci03d,                &
                      CHACI03D = chaci03d,                &
                      CHACS03D = chacs03d,                &
+!                     schaci3d = schaci,                  &
+!                     schacs3d = schacs,                  &
+!                     scsaci3d = scsaci,                  &
                      umc = umc,                          &
                      umr = umr,                          &
                      umi = umi,                          &

@@ -3952,6 +3952,9 @@ BENCH_START(micro_driver_tim)
       &        , CHACI03D=grid%chaci03d                                   &
       &        , CHACS03D=grid%chacs03d                                   &
       &        , CSACI03D_MORR=grid%CSACI03D_morr                         &
+      &        , schaci=grid%schaci                                   &
+      &        , schacs=grid%schacs                                   &
+      &        , scsaci=grid%scsaci                                   &
       &        , umc=grid%umc                                             &
       &        , umr=grid%umr                                             &
       &        , umi=grid%umi                                             &
