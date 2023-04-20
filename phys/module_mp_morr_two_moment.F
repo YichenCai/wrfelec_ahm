@@ -808,6 +808,7 @@ CONTAINS
             ,chacs03d                  & !
             ,csaci03d_morr             & !
             ,umc,umr,umi,ums,umg       & !
+            ,schaci3d,schacs3d,scsaci3d     & !
             ,QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D &
             ,PRD3d &
             ,PRE3d &
@@ -927,6 +928,9 @@ CONTAINS
         ! csaci03d_morr = collision rate for ice-snow, morr eq  (#/kg/s)
         ! umx = hydrometeor fall speed
         ! qxsten = sedimentation rates
+        ! schaci3d = noninduc charging rate for graup-ice  (C/m3/s)
+        ! schacs3d = noninduc charging rate for graup-snow (C/m3/s)
+        ! scsaci3d = noninduc charging rate for snow-ice   (C/m3/s)
         !-----------------------------------------------------------------------
         !End Explicit lightning ------------------------------------------------
 
@@ -1030,6 +1034,7 @@ CONTAINS
         real, dimension(ims:ime, kms:kme, jms:jme,2),optional, intent(inout) :: scion
         real, dimension(ims:ime, jms:jme), optional, intent(inout):: rscghis_2d
         real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout):: csaci03d, chaci03d, chacs03d, csaci03d_morr ! to be passed out [#/kg/s]
+        real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout):: schaci3d, schacs3d, scsaci3d
         real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout):: umc, umr, umi, ums, umg ! fall speed
         real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout):: QGSTEN3D,QRSTEN3D,QISTEN3D,QNISTEN3D,QCSTEN3D ! sed rates
         real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(in) :: elec ! elecsave = Ez
@@ -1095,6 +1100,7 @@ CONTAINS
         real, dimension(kts:kte, na) :: an1d
         real, dimension(kts:kte) :: to_sed
         real, dimension(kts:kte) :: csaci0, chaci0, chacs0, csaci0_morr ! local 1d array [#/m3/s]
+        real, dimension(kts:kte) :: schaci,schacs,scsaci ! local 1d array [#/m3/s]
 
         real, dimension(kts:kte) :: PRD
         real, dimension(kts:kte) :: PRE
@@ -1262,8 +1268,11 @@ CONTAINS
         QMULTG3d = 0.0
         QMULTRG3d = 0.0
 
+        schaci3d = 0.0
+        schacs3d = 0.0
+        scsaci3d = 0.0
 
-            print*, "-----------------------------------------------------------"
+        print*, "-----------------------------------------------------------"
             print*, "at it = ", itimestep, "dt = ", dt_in, " pre print"
             print*, "ims:ime, kms:kme, jms:jme"
             print*, ims,ime, kms,kme, jms,jme
@@ -1342,7 +1351,7 @@ CONTAINS
                                 sciona(i,k,j)) *dx*dy*dz(i,k,j)  ! [kg/m3]*[C/kg]*[m3] = [C]
                         chgneg1 = chgneg1 + Min(0.0, tmp)
                         chgpos1 = chgpos1 + Max(0.0, tmp)
-                        chgiona1 = chgiona1 + (an(i,1,k,lscpi)-an(i,1,k,lscni)) * ec * rho_igl(i,k,j) * dx*dy*dz(i,k,j) ! rho_igl looks like a mistake here
+                        chgiona1 = chgiona1 + (an(i,1,k,lscpi)-an(i,1,k,lscni)) * ec * dx*dy*dz(i,k,j) ! rho_igl looks like a mistake here
                     END DO
                 END DO
                 !!!  End chg...1
@@ -1444,6 +1453,9 @@ CONTAINS
                 umi1d(:) = 0.0
                 ums1d(:) = 0.0
                 umg1d(:) = 0.0
+                schaci(:) = 0.0
+                schacs(:) = 0.0
+                scsaci(:) = 0.0
                 end if
                 !End Explicit lightning ------------------------------------------------
                 !-----------------------------------------------------------------------
@@ -1469,6 +1481,7 @@ CONTAINS
                 , I, J, ITIMESTEP &
                 , IDS,IDE, JDS,JDE, KDS,KDE & ! domain dims
                 , CSACI0, CHACI0, CHACS0, csaci0_morr &
+                ,schaci,schacs,scsaci &
                 , an1d, elec1d &
                 , t2_1d,t3_1d,t5_1d,t6_1d,t8_1d &
                 ,PRD &
@@ -1532,6 +1545,10 @@ CONTAINS
                     chaci03d(i,kts:kte,j) = chaci0(kts:kte)/rho_igl(i,kts:kte,j)
                     chacs03d(i,kts:kte,j) = chacs0(kts:kte)/rho_igl(i,kts:kte,j)
                     csaci03d_morr(i,kts:kte,j) = csaci0_morr(kts:kte)
+
+                    schaci3d(i,kts:kte,j) = schaci(kts:kte)
+                    schacs3d(i,kts:kte,j) = schacs(kts:kte)
+                    scsaci3d(i,kts:kte,j) = scsaci(kts:kte)
 
                     an(i, 1, kts:kte, 1:na) = an1d(kts:kte,1:na)
 
@@ -1715,12 +1732,12 @@ CONTAINS
             ENDIF
 
             IF ( present( sciona ) .and. lnh > 1 .and. ipelec > 0) THEN
-
                 CALL SCIONATT    &
                         &  (nx,ny,nz,na,j &
                         &  ,nor,nor &
                         &  ,dt,dz2d &
                         &  ,an &
+                        &  ,itimestep &
                         &  )
             ENDIF
 
@@ -1729,21 +1746,15 @@ CONTAINS
                 !!!  Collect into chg...2 (an[m-3])
                 DO k = kts,kte
                     DO i = its,ite
-                        !                IF ( lhl > 1 ) THEN
-                        !                    tmp =   (an(i,1,k,lscw)+an(i,1,k,lscr)+an(i,1,k,lsci)+ &
-                        !                            &             an(i,1,k,lscs)+an(i,1,k,lsch)+an(i,1,k,lschl)+ &
-                        !                            &             (an(i,1,k,lscpi)-an(i,1,k,lscni))*ec )*dx*dy*dz(i,k,j)
-                        !                ELSE
                         tmp =   (an(i,1,k,lscw)+ &
                                 an(i,1,k,lscr)+ &
                                 an(i,1,k,lsci)+ &
                                 an(i,1,k,lscs)+ &
                                 an(i,1,k,lsch)+ &
                                 (an(i,1,k,lscpi)-an(i,1,k,lscni))*ec) *dx*dy*dz(i,k,j)
-                        !                ENDIF
                         chgneg2 = chgneg2 + Min(0.0, tmp)
                         chgpos2 = chgpos2 + Max(0.0, tmp)
-                        chgiona2 = chgiona2 + (an(i,1,k,lscpi)-an(i,1,k,lscni)) * ec * rho_igl(i,k,j) * dx*dy*dz(i,k,j)
+                        chgiona2 = chgiona2 + (an(i,1,k,lscpi)-an(i,1,k,lscni)) * ec * dx*dy*dz(i,k,j)
                     ENDDO
                 ENDDO
                 !!!  End chg...2
@@ -1760,7 +1771,7 @@ CONTAINS
                 !!!!      End "denscale" list
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-                sciona(its:ite,kts:kte,j) = (an(ix,1,kz,lscpi) - an(ix,1,kz,lscni))&
+                sciona(its:ite,kts:kte,j) = (an(its:ite,1,kts:kte,lscpi) - an(its:ite,1,kts:kte,lscni))&
                         * ec / rho_igl(its:ite,kts:kte,j)
                 scw(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscw)
                 scr(its:ite,kts:kte,j) = an(its:ite,1,kts:kte,lscr)
@@ -1783,6 +1794,12 @@ CONTAINS
                             scs(i,kts:kte,j) = 0.
                             sch(i,kts:kte,j) = 0.
                             sctot(i,kts:kte,j) = 0.
+                            chaci03d(i,kts:kte,j) = 0.
+                            chacs03d(i,kts:kte,j) = 0.
+                            csaci03d_morr(i,kts:kte,j) = 0.
+                            schaci3d(i,kts:kte,j) = 0.
+                            schacs3d(i,kts:kte,j) = 0.
+                            scsaci3d(i,kts:kte,j) = 0.
                         END IF
                     end if
                 end do
@@ -1986,6 +2003,7 @@ CONTAINS
             , I, J, ITIMESTEP &
             , IDS,IDE, JDS,JDE, KDS,KDE & ! domain dims
             , CSACI0, CHACI0, CHACS0, csaci0_morr &
+            ,schaci,schacs,scsaci &
             , an1d, elec1d &
             , t2,t3,t5,t6,t8 &
             ,PRD &
@@ -2397,7 +2415,7 @@ CONTAINS
     REAL, INTENT(INOUT), DIMENSION(KTS:KTE) ::   CSACI0 ! SNOW-ICE COLLISION RATE (#COLLI./M3/S)
     REAL, INTENT(INOUT), DIMENSION(KTS:KTE) ::   CHACI0 ! GRAUP-ICE COLLISION RATE (#COLLI./M3/S)
     REAL, INTENT(INOUT), DIMENSION(KTS:KTE) ::   CHACS0 ! GRAUP-SNOW COLLISION RATE (#COLLI./M3/S)
-    ! csaci0_morr is simply 9 times NPRAI for now, since eii=0.1
+            ! csaci0_morr is simply 9 times NPRAI for now, since eii=0.1
     REAL, INTENT(INOUT), DIMENSION(KTS:KTE) ::   csaci0_morr ! SNOW-ICE COLLISION RATE, morr (#COLLI./kg/S)
     REAL, INTENT(INOUT), DIMENSION(KTS:KTE) ::  umc1d, umr1d, umi1d, ums1d, umg1d ! 1d fallspeed to pass out
 
@@ -6756,6 +6774,13 @@ CONTAINS
         an1d(kts:kte,lni) = ni3d(kts:kte)*RHO(kts:kte)
         an1d(kts:kte,lns) = ns3d(kts:kte)*RHO(kts:kte)
         an1d(kts:kte,lnh) = ng3d(kts:kte)*RHO(kts:kte)
+
+        ! test printout
+        QRSTEN(kts:kte) = xdia(kts:kte,lr)
+        QISTEN(kts:kte) = xdia(kts:kte,li)
+        QNISTEN(kts:kte) = xdia(kts:kte,ls)
+        QCSTEN(kts:kte) = xdia(kts:kte,lc)
+        QGSTEN(kts:kte) = xdia(kts:kte,lh)
     END IF
     ! ALL DONE !!!!!!!!!!!
     RETURN
@@ -9984,12 +10009,13 @@ CONTAINS
             !            &  ,dn,p2 &
             !            &  ,pn,w &
             !            &  ,tmp3d &
+            &  ,itimestep &
             &  )
 
         implicit none
 
         integer :: nx,ny,nz,na
-        integer :: ng
+        integer :: itimestep
         integer :: nor,norz, jyslab ! ,nht,ngt,igsr
         real    :: dtp  ! time step
 

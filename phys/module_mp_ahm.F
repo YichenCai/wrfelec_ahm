@@ -1205,14 +1205,39 @@ CONTAINS
       END DO
 
       END SUBROUTINE MP_AHM
-      
+
+!!*****************************************************************************
+!SUBROUTINE AHM_MICRO(t, dt, qv, qc, qr, qs, qg, qi, nc,      &
+!      nr, ns, ng, ni, ai, ci, as, cs, p, rho, dzq, ims, ime, jms,  &
+!      jme, kms, kme, its, ite, jts, jte, kts, kte, ids, ide, jds,  &
+!      jde, kds, kde, itimestep,icedep, icesub, rainevap, snowevap, &
+!      snowmelt, snowdep, snowsub, snowaccr, cloudcond, cloudevap,  &
+!      icemelt, icenuc, rainfrz, cloudfrz, rsed, ised, ssed, gsed,  &
+!      naggout, nraggout, nsaggout, praout, phi, rhoice, cplx, phis,&
+!      rhos, cplxs, relh, iin, ccn, iin_sum, iin_sumj, precprt,     &
+!      snowrt, snowprt, grplprt,ihr,nhrs, contact, prcout, dep,     &
+!      prciout, psacwsout, qmultsout, qmultrout, piacrout, praciout,&
+!      piacrsout, pracisout, pracgout, psacwgout, pgsacwout,        &
+!      pgracsout, prdgout, eprdgout, evpmgout, pgmltout, qmultgout, &
+!      qmultrgout, immersion, praiout, cfrzr, qagg, qnagg, &
+!      an, elec2d, ipelec, j, snowflag&
+!      ,scsacw,scsaci,schacw,schaci,schacs &
+!      ,CSACI0,CHACI0,CHACS0 &
+!      ,umx &
+!      )
 !*****************************************************************************
       SUBROUTINE AHM_MICRO(t, dt, qv, qc, qr, qs, qg, qi, nc,      &
       nr, ns, ng, ni, ai, ci, as, cs, p, rho, dzq, ims, ime, jms,  &
       jme, kms, kme, its, ite, jts, jte, kts, kte, ids, ide, jds,  &
-      jde, kds, kde, itimestep,icedep, icesub, rainevap, snowevap, &
-      snowmelt, snowdep, snowsub, snowaccr, cloudcond, cloudevap,  &
-      icemelt, icenuc, rainfrz, cloudfrz, rsed, ised, ssed, gsed,  &
+      jde, kds, kde, itimestep,icedep, icesub,                     &
+!      rainevap, snowevap, snowmelt, snowdep,                       &
+!      snowsub, snowaccr, cloudcond, cloudevap,                     &
+!      icemelt, icenuc, rainfrz, cloudfrz,                          &
+!      rsed, ised, ssed, gsed,  &
+              qconkqhi, qconmhi, qconnhi, ftelwchi,        &
+              qconkqhs, qconmhs, qconnhs, ftelwchs,        &
+              qconkqsi, qconmsi, qconnsi, ftelwcsi,        &
+              xdiac, xdiai, xdias, xdiag,        &
       naggout, nraggout, nsaggout, praout, phi, rhoice, cplx, phis,&
       rhos, cplxs, relh, iin, ccn, iin_sum, iin_sumj, precprt,     &
       snowrt, snowprt, grplprt,ihr,nhrs, contact, prcout, dep,     &
@@ -1224,6 +1249,8 @@ CONTAINS
       ,scsacw,scsaci,schacw,schaci,schacs &
       ,CSACI0,CHACI0,CHACS0 &
       ,umx &
+!      ,xdia &
+!    ,chgvar &
               )
 !****************************************************************************
 
@@ -1240,7 +1267,8 @@ CONTAINS
       REAL, DIMENSION(its:ite,kts:kte), INTENT(INOUT) :: &
       qv, qc, qr, qs, qg, qi, nc, nr, ns, ng, ni, ai, ci, as, cs, t
  
-      REAL, DIMENSION(its:ite,kts:kte), INTENT(OUT) :: &
+!      REAL, DIMENSION(its:ite,kts:kte), INTENT(OUT) :: &
+      REAL, DIMENSION(its:ite,kts:kte):: &
       icedep, icesub, rainevap, snowevap, snowmelt, snowdep, snowsub,&
       snowaccr, cloudcond, cloudevap, icemelt, icenuc, rainfrz,      &
       cloudfrz, dep, contact, ised, ssed, gsed, rsed, rhoice, cplx,  &
@@ -1503,6 +1531,13 @@ CONTAINS
       real xdia(its:ite,kts:kte,lc:lhab) ! diameter; =1/lamx
       real umx(its:ite,kts:kte,lc:lhab) ! fall speed
       real rarx(its:ite,kts:kte,ls:lhab)
+      real chgvar(its:ite,kts:kte,lc:lhab)
+
+      REAL, DIMENSION(its:ite,kts:kte), INTENT(OUT) :: &
+              qconkqhi, qconmhi, qconnhi, ftelwchi,        &
+              qconkqhs, qconmhs, qconnhs, ftelwchs,        &
+              qconkqsi, qconmsi, qconnsi, ftelwcsi,        &
+              xdiac, xdiai, xdias, xdiag
 
       ! scxacy series
       real, intent(out) :: scsacw(its:ite,kts:kte) ! inductive
@@ -1614,12 +1649,19 @@ CONTAINS
           ! Initialization
 
           !        LAMC(kts:kte) = 0.0 ! safety precaution for use in induc charging
+
+          qconkqhi = 0.0; qconmhi = 0.0; qconnhi = 0.0; ftelwchi = 0.0
+          qconkqhs = 0.0; qconmhs = 0.0; qconnhs = 0.0; ftelwchs = 0.0
+          qconkqsi = 0.0; qconmsi = 0.0; qconnsi = 0.0; ftelwcsi = 0.0
+          xdiac = 0.0; xdiai = 0.0; xdias = 0.0; xdiag = 0.0
+
           scxacy = 0.0
           cxacy  = 0.0
           xdia   = 0.0
           scx    = 0.0
           exy    = 0.0
           umx    = 0.0
+          chgvar = 0.0
 
           schacw = 0.0
           scsacw = 0.0
@@ -1710,7 +1752,7 @@ CONTAINS
       sphrflag   = 0            !all ice assumed spheres
       redden     = 0            !reduces density of spheres
       homofreeze = 1            !homogeneous freezing
-      snowflag  = 1             !ice --> snow & aggregation
+      snowflag  = 2             !ice --> snow & aggregation
       meltflag = 1              !1 Jensen_Ishmael melting scheme, o/w instantaneous
       effflag = 1               !1 for ice-ice agg efficiency from connolly et al 2012
       SEDON      = 1            !sedimentation
@@ -3802,8 +3844,9 @@ CONTAINS
                     if (sphrflag.eq.1) then
                         rhoielec = 920.
                         If(redden .eq. 1) rhoielec = 500.
-                        xdia(i,k,lc) = (6/(PI*rhoielec)*qi(i,k)/ni(i,k))**(1./3.)
-                        xdia(i,k,lc) = min(max(xdia(i,k,lc),1.E-6),(2.*125.E-6+100.E-6)) ! adapted from morr
+                        xdia(i,k,li) =  2.*rni
+!                        xdia(i,k,li) = (6/(PI*rhoielec)*qi(i,k)/ni(i,k))**(1./3.)
+!                        xdia(i,k,li) = min(max(xdia(i,k,li),1.E-6),(2.*125.E-6+100.E-6)) ! adapted from morr
                     else
                         anielec=ai(i,k)/(nu*ni(i,k))
                         cnielec=ci(i,k)/(nu*ni(i,k))
@@ -3822,7 +3865,7 @@ CONTAINS
                         end if
                     end if
 
-                    umx(i,k,li) = vtrmi1(i,k)
+                    umx(i,k,li) = vtrmi1(i,k) ! used for both sphere/non-sphere ice, as in sedimentation
                 END IF
 
                 IF(qr(i,k).gt.qsmall.and.nr(i,k).gt.qsmall) THEN
@@ -3951,6 +3994,26 @@ CONTAINS
                                                 ENDIF
 
                                                 cfce15 = 1.0e-15
+
+                                                if (il==lh .and. ic==li) then
+                                                    qconkqhi(i,k) = qconkq
+                                                    qconmhi(i,k) = qconm
+                                                    qconnhi(i,k) = qconn
+                                                    ftelwchi(i,k) = ftelwc
+                                                end if
+                                                if (il==lh .and. ic==ls) then
+                                                    qconkqhs(i,k) = qconkq
+                                                    qconmhs(i,k) = qconm
+                                                    qconnhs(i,k) = qconn
+                                                    ftelwchs(i,k) = ftelwc
+                                                end if
+                                                if (il==ls .and. ic==li) then
+                                                    qconkqsi(i,k) = qconkq
+                                                    qconmsi(i,k) = qconm
+                                                    qconnsi(i,k) = qconn
+                                                    ftelwcsi(i,k) = ftelwc
+                                                end if
+
                                                 scxacy(i,k,il,ic) = qconkq*(xdia(i,k,ic)**qconm)   &
                                                         &  *((abs(umx(i,k,il)-umx(i,k,ic)))**qconn)   &
                                                         &  *ftelwc*cfce15
@@ -5390,6 +5453,11 @@ CONTAINS
           an(its:ite,1,kts:kte,lni) = ni(its:ite,kts:kte)*rho(its:ite,kts:kte)
           an(its:ite,1,kts:kte,lns) = ns(its:ite,kts:kte)*rho(its:ite,kts:kte)
           an(its:ite,1,kts:kte,lnh) = ng(its:ite,kts:kte)*rho(its:ite,kts:kte)
+
+          xdiac(its:ite,kts:kte) = xdia(its:ite,kts:kte,lc)
+          xdiai(its:ite,kts:kte) = xdia(its:ite,kts:kte,li)
+          xdias(its:ite,kts:kte) = xdia(its:ite,kts:kte,ls)
+          xdiag(its:ite,kts:kte) = xdia(its:ite,kts:kte,lg)
       end if
       RETURN
 
@@ -10037,12 +10105,12 @@ CONTAINS
                         if (an(ix,jy,kz,lh) > qxmin(lh)) frach=((an(ix,jy,kz,lh)/rhog)**(2./3.) ) * Max(an(ix,jy,kz,lnh), 0.0)**(1./3.)
 
                         fractot = fracw + fracr + fraci + fracs + frach + frachl
-                        if(fracw<0.0 .or. fracr<0.0 .or. fraci<0.0 .or. fracs<0.0 .or. frach<0.0) then
-                            write(0,*) 'negative frac at t,ix,jy,kz,='
-                            write(0,*) itimestep,ix,jy,kz
-                            write(0,*) 'fracw, fracr', fracw, fracr
-                            write(0,*) 'fraci, fracs, frach', fraci, fracs, frach
-                        end if
+!                        if(fracw<0.0 .or. fracr<0.0 .or. fraci<0.0 .or. fracs<0.0 .or. frach<0.0) then
+!                            write(0,*) 'negative frac at t,ix,jy,kz,='
+!                            write(0,*) itimestep,ix,jy,kz
+!                            write(0,*) 'fracw, fracr', fracw, fracr
+!                            write(0,*) 'fraci, fracs, frach', fraci, fracs, frach
+!                        end if
 
                         IF ( fractot > 0.0 ) THEN
                             tmpion = (an(ix,jy,kz,lscpi) - an(ix,jy,kz,lscni))*ec ! C/m3

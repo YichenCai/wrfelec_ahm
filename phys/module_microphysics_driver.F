@@ -95,7 +95,7 @@ SUBROUTINE microphysics_driver(                                          &
                       ,csaci03d,chaci03d,chacs03d, csaci03d_morr         &
                       ,umc,umr,umi,ums,umg,umh                           &
                       ,rhog,rhoh                                    &
-                      ,schaci,schacs,scsaci                         &
+                      ,schaci,schacs,scsaci,schlacs,schlaci                         &
                     ,QGSTEN3D & ! yc added 10/07/2021 for sedimentation rates
                     ,QRSTEN3D &
                     ,QISTEN3D &
@@ -652,7 +652,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                                                    ,csaci03d,chaci03d,chacs03d, csaci03d_morr       & ! yc added 9/23/2020 for i-g and s-g collision rates
                                                    ,umc,umr,umi,ums,umg,umh                         & ! yc added 9/08/2021 fall speed
                                                    ,rhog,rhoh                                  & ! yc added 9/08/2021 hydrometeor density from nssl2m
-                                                   ,schaci,schacs,scsaci                         &
+                                                   ,schaci,schacs,scsaci,schlacs,schlaci                         &
                                              ,QGSTEN3D & ! yc added 10/07/2021 for sedimentation rates
                                              ,QRSTEN3D &
                                              ,QISTEN3D &
@@ -1341,9 +1341,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      ,umi = umi &!
                      ,ums = ums &!
                      ,umg = umg &!
-!                     ,schaci3d = schaci &
-!                     ,schacs3d = schacs &
-!                     ,scsaci3d = scsaci &
+                     ,schaci3d = schaci &
+                     ,schacs3d = schacs &
+                     ,scsaci3d = scsaci &
                      ,QGSTEN3D = QGSTEN3D &
                      ,QRSTEN3D = QRSTEN3D &
                      ,QISTEN3D = QISTEN3D &
@@ -2254,9 +2254,11 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      CSACI03D = csaci03d,                &
                      CHACI03D = chaci03d,                &
                      CHACS03D = chacs03d,                &
-!                     schaci3d = schaci,                  &
-!                     schacs3d = schacs,                  &
-!                     scsaci3d = scsaci,                  &
+                     schaci3d = schaci,                  &
+                     schacs3d = schacs,                  &
+                     scsaci3d = scsaci,                  &
+!                     schlacs3d = schlacs,                  &
+!                     schlaci3d = schlaci,                  &
                      umc = umc,                          &
                      umr = umr,                          &
                      umi = umi,                          &
@@ -2509,9 +2511,11 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      CSACI03D = csaci03d,                &
                      CHACI03D = chaci03d,                &
                      CHACS03D = chacs03d,                &
-!                     schaci3d = schaci,                  &
-!                     schacs3d = schacs,                  &
-!                     scsaci3d = scsaci,                  &
+                     schaci3d = schaci,                  &
+                     schacs3d = schacs,                  &
+                     scsaci3d = scsaci,                  &
+!                     schlacs3d = schlacs,                  &
+!                     schlaci3d = schlaci,                  &
                      umc = umc,                          &
                      umr = umr,                          &
                      umi = umi,                          &

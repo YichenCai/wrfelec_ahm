@@ -1616,6 +1616,7 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
                               csaci03d,chaci03d,chacs03d,                  &
                               umc,umr,umi,ums,umg,umh,                     &
                               rho_s,rho_g,rho_h,                           &
+                              schaci3d,schacs3d,scsaci3d,schlacs3d,schlaci3d,     & !
                               pcc2, pre2, depsubr,      &
                               mnucf2, melr2, ctr2,     &
                               rim1_2, rim2_2,rim3_2, &
@@ -1677,6 +1678,7 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)  :: csaci03d,chaci03d,chacs03d ! collision rate
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)  :: umc,umr,umi,ums,umg,umh
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)  :: rho_s,rho_g,rho_h
+      real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(inout)  :: schaci3d,schacs3d,scsaci3d,schlacs3d,schlaci3d
       real, dimension(ims:ime, kms:kme, jms:jme),  optional, intent(in) :: elec ! elecsave = Ez
       real, dimension(ims:ime, kms:kme, jms:jme,2),optional, intent(inout) :: scion  
       real, dimension(ims:ime, kms:kme, jms:jme), intent(in)::  p,w,dz,dn
@@ -1736,6 +1738,7 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
      real, dimension(its:ite, 1, kts:kte) :: elec2 ! ez = elecsave slab
      real, dimension(its:ite, 1, kts:kte) :: sciona2d
      real, dimension(its:ite, 1, kts:kte) :: csaci02d,chaci02d,chacs02d ! collision rate from gs
+     real, dimension(its:ite, 1, kts:kte) :: scsaci2d,schacs2d,schaci2d,schlacs2d,schlaci2d
      real, dimension(its:ite, 1, kts:kte) :: umc2d,umr2d,umi2d,ums2d,umg2d,umh2d !
      real, dimension(its:ite, 1, kts:kte) :: rhos2d,rhog2d,rhoh2d
 !     real, dimension(its:ite, 1, kts:kte,2) :: scion2 ! 1=- , 2=+
@@ -1808,6 +1811,14 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
      ELSE
        ipelec = 0
      ENDIF
+
+     if (ipelec>0) then
+       csaci03d=0.0;chaci03d=0.0;chacs03d=0.0
+       umc=0.0;umr=0.0;umi=0.0;ums=0.0;umg=0.0;umh=0.0
+       rho_s=0.0;rho_g=0.0;rho_h=0.0
+       schaci3d=0.0;schacs3d=0.0;scsaci3d=0.0
+!       schlacs3d=0.0;schlaci3d=0.0
+     end if
 !       IF ( present( dbz ) ) THEN
 !       DO jy = jts,jte
 !         DO kz = kts,kte
@@ -1979,7 +1990,13 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
           ancuten(its:ite,1,kts:kte,:) = 0.0
 
      DO jy = jts,jye
-     
+
+!       if (ipelec>0) then
+!         csaci02d=0.0;chaci02d=0.0;chacs02d=0.0
+!         umc2d=0.0;umr2d=0.0;umi2d=0.0;ums2d=0.0;umg2d=0.0;umh2d=0.0
+!         rhos2d=0.0;rhog2d=0.0;rhoh2d=0.0
+!         scsaci2d=0.0;schacs2d=0.0;schaci2d=0.0;schlacs2d=0.0;schlaci2d=0.0
+!       end if
      xfall(:,:,:) = 0.0
 
 !     write(0,*) 'N2M: load an, jy,lccn = ',jy,lccn,qccn
@@ -2347,6 +2364,7 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
      & ,elec2,its,ids,ide,jds,jde          &
      & ,itimestep &
      & ,csaci02d,chaci02d,chacs02d &
+     & ,scsaci2d,schacs2d,schaci2d,schlacs2d,schlaci2d &
      & ,umc2d,umr2d,umi2d,ums2d,umg2d,umh2d    &
      & ,rhos2d,rhog2d,rhoh2d &
      & )
@@ -2537,9 +2555,15 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
          sch(ix,kz,jy)  = an(ix,1,kz,lsch)
          sctot(ix,kz,jy)  = dn(ix,kz,jy)*(scw(ix,kz,jy)+scr(ix,kz,jy)+sci(ix,kz,jy)+scs(ix,kz,jy) &
       &                     + sch(ix,kz,jy)+sciona(ix,kz,jy) ) ! to get C/m3 for RHS calc later on
+!H      has values here
+         chacs03d(ix,kz,jy)  = chacs02d(ix,1,kz)/dn(ix,kz,jy)
          csaci03d(ix,kz,jy)  = csaci02d(ix,1,kz)/dn(ix,kz,jy)  ! convert m-3 to kg-1
          chaci03d(ix,kz,jy)  = chaci02d(ix,1,kz)/dn(ix,kz,jy)
-         chacs03d(ix,kz,jy)  = chacs02d(ix,1,kz)/dn(ix,kz,jy)
+         schaci3d(ix,kz,jy)  = schaci2d(ix,1,kz)
+         schacs3d(ix,kz,jy)  = schacs2d(ix,1,kz)
+         scsaci3d(ix,kz,jy)  = scsaci2d(ix,1,kz)
+!         schlacs3d(ix,kz,jy)  = schlacs2d(ix,1,kz)
+!         schlaci3d(ix,kz,jy)  = schlaci2d(ix,1,kz)
          umc(ix,kz,jy) = umc2d(ix,1,kz)
          umr(ix,kz,jy) = umr2d(ix,1,kz)
          umi(ix,kz,jy) = umi2d(ix,1,kz)
@@ -12316,6 +12340,7 @@ END SUBROUTINE nssl_2mom_driver
      & ,elec,its,ids,ide,jds,jde &
      &,itimestep &
      & ,csaci02d,chaci02d,chacs02d &
+     & ,scsaci2d,schacs2d,schaci2d,schlacs2d,schlaci2d &
      & ,umc2d,umr2d,umi2d,ums2d,umg2d,umh2d &
      & ,rhos2d,rhog2d,rhoh2d &
      & )
@@ -12533,6 +12558,8 @@ END SUBROUTINE nssl_2mom_driver
       real csaci02d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+ng1:nz+norz)
       real chaci02d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+ng1:nz+norz)
       real chacs02d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+ng1:nz+norz)
+      real, DIMENSION(-nor+1:nx+nor,-nor+1:ny+nor,-norz+ng1:nz+norz) :: &
+        scsaci2d,schacs2d,schaci2d,schlacs2d,schlaci2d
       real umc2d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+ng1:nz+norz)
       real umr2d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+ng1:nz+norz)
       real umi2d(-nor+1:nx+nor,-nor+1:ny+nor,-norz+ng1:nz+norz)
@@ -13419,6 +13446,21 @@ END SUBROUTINE nssl_2mom_driver
       csaci02d = 0.0
       chaci02d = 0.0
       chacs02d = 0.0
+      scsaci2d = 0.0
+      schacs2d = 0.0
+      schaci2d = 0.0
+      schlacs2d = 0.0
+      schlaci2d = 0.0
+
+      umc2d = 0.0
+      umr2d = 0.0
+      umi2d = 0.0
+      ums2d = 0.0
+      umg2d = 0.0
+      umh2d = 0.0
+      rhos2d = 0.0
+      rhog2d = 0.0
+      rhoh2d = 0.0
 
       pb(:) = 0.0
        pinit(:) = 0.0
@@ -22975,6 +23017,7 @@ END SUBROUTINE nssl_2mom_driver
       IF ( ipelec >= 1 ) THEN
 
       DO mgs = 1,ngscnt
+!        Has values here
         t1(igs(mgs),jy,kgs(mgs)) = scsaci(mgs)
         t2(igs(mgs),jy,kgs(mgs)) = schacs(mgs)
         t3(igs(mgs),jy,kgs(mgs)) = schaci(mgs) + schacis(mgs)
@@ -23182,6 +23225,7 @@ END SUBROUTINE nssl_2mom_driver
         csaci02d(igs(mgs),jy,kgs(mgs)) = csaci0(mgs)
         chaci02d(igs(mgs),jy,kgs(mgs)) = chaci0(mgs)
         chacs02d(igs(mgs),jy,kgs(mgs)) = chacs0(mgs)
+
         umc2d(igs(mgs),jy,kgs(mgs)) = vtxbar(mgs,lc,1)
         umr2d(igs(mgs),jy,kgs(mgs)) = vtxbar(mgs,lr,1)
         umi2d(igs(mgs),jy,kgs(mgs)) = vtxbar(mgs,li,1)
@@ -23191,6 +23235,12 @@ END SUBROUTINE nssl_2mom_driver
         rhos2d(igs(mgs),jy,kgs(mgs)) = xdn(mgs,ls)
         rhog2d(igs(mgs),jy,kgs(mgs)) = xdn(mgs,lh)
         rhoh2d(igs(mgs),jy,kgs(mgs)) = xdn(mgs,lhl)
+
+        scsaci2d(igs(mgs),jy,kgs(mgs)) = scsaci(mgs)
+        schacs2d(igs(mgs),jy,kgs(mgs)) = schacs(mgs)
+        schaci2d(igs(mgs),jy,kgs(mgs)) = schaci(mgs)
+        schlacs2d(igs(mgs),jy,kgs(mgs)) = schlacs(mgs)
+        schlaci2d(igs(mgs),jy,kgs(mgs)) = schlaci(mgs)
       end do
       DO il = lc,lhab
       do mgs = 1,ngscnt
