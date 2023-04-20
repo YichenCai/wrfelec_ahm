@@ -3955,6 +3955,8 @@ BENCH_START(micro_driver_tim)
       &        , schaci=grid%schaci                                   &
       &        , schacs=grid%schacs                                   &
       &        , scsaci=grid%scsaci                                   &
+!      &        , schlaci=grid%schlaci                                   &
+!      &        , schlacs=grid%schlacs                                   &
       &        , umc=grid%umc                                             &
       &        , umr=grid%umr                                             &
       &        , umi=grid%umi                                             &
@@ -4074,6 +4076,7 @@ BENCH_START(micro_driver_tim)
       &        ,ccn_conc=grid%ccn_conc                                   & ! RAS
 
                                                                           )
+
 BENCH_END(micro_driver_tim)
 
 #if 0
