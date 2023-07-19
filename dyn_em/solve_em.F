@@ -3775,6 +3775,8 @@ BENCH_START(micro_driver_tim)
 #endif
 
 
+       if (dtm*(grid%itimestep).gt.60*60) then ! allow 1hr spin-up time for microphysics
+
      CALL microphysics_driver(                                            &
       &         DT=dtm             ,DX=grid%dx              ,DY=grid%dy   &
       &        ,DZ8W=dz8w          ,F_ICE_PHY=grid%f_ice_phy              &
@@ -4076,6 +4078,8 @@ BENCH_START(micro_driver_tim)
       &        ,ccn_conc=grid%ccn_conc                                   & ! RAS
 
                                                                           )
+
+           endif ! 1hr spinup
 
 BENCH_END(micro_driver_tim)
 
