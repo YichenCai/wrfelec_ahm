@@ -1230,14 +1230,14 @@ CONTAINS
       nr, ns, ng, ni, ai, ci, as, cs, p, rho, dzq, ims, ime, jms,  &
       jme, kms, kme, its, ite, jts, jte, kts, kte, ids, ide, jds,  &
       jde, kds, kde, itimestep,icedep, icesub,                     &
-!      rainevap, snowevap, snowmelt, snowdep,                       &
-!      snowsub, snowaccr, cloudcond, cloudevap,                     &
-!      icemelt, icenuc, rainfrz, cloudfrz,                          &
-!      rsed, ised, ssed, gsed,  &
-              qconkqhi, qconmhi, qconnhi, ftelwchi,        &
-              qconkqhs, qconmhs, qconnhs, ftelwchs,        &
-              qconkqsi, qconmsi, qconnsi, ftelwcsi,        &
-              xdiac, xdiai, xdias, xdiag,        &
+      rainevap, snowevap, snowmelt, snowdep,                       &
+      snowsub, snowaccr, cloudcond, cloudevap,                     &
+      icemelt, icenuc, rainfrz, cloudfrz,                          &
+      rsed, ised, ssed, gsed,  &
+!              qconkqhi, qconmhi, qconnhi, ftelwchi,        &
+!              qconkqhs, qconmhs, qconnhs, ftelwchs,        &
+!              qconkqsi, qconmsi, qconnsi, ftelwcsi,        &
+!              xdiac, xdiai, xdias, xdiag,
       naggout, nraggout, nsaggout, praout, phi, rhoice, cplx, phis,&
       rhos, cplxs, relh, iin, ccn, iin_sum, iin_sumj, precprt,     &
       snowrt, snowprt, grplprt,ihr,nhrs, contact, prcout, dep,     &
@@ -1533,7 +1533,7 @@ CONTAINS
       real rarx(its:ite,kts:kte,ls:lhab)
       real chgvar(its:ite,kts:kte,lc:lhab)
 
-      REAL, DIMENSION(its:ite,kts:kte), INTENT(OUT) :: &
+      REAL, DIMENSION(its:ite,kts:kte) :: &
               qconkqhi, qconmhi, qconnhi, ftelwchi,        &
               qconkqhs, qconmhs, qconnhs, ftelwchs,        &
               qconkqsi, qconmsi, qconnsi, ftelwcsi,        &
@@ -1752,7 +1752,7 @@ CONTAINS
       sphrflag   = 0            !all ice assumed spheres
       redden     = 0            !reduces density of spheres
       homofreeze = 1            !homogeneous freezing
-      snowflag  = 2             !ice --> snow & aggregation
+      snowflag  = 1             !ice --> snow & aggregation
       meltflag = 1              !1 Jensen_Ishmael melting scheme, o/w instantaneous
       effflag = 1               !1 for ice-ice agg efficiency from connolly et al 2012
       SEDON      = 1            !sedimentation
