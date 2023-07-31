@@ -1749,7 +1749,7 @@ CONTAINS
 !     3 for Mitchell's mass relations (stellars, columns)
 !     4 for Wood's (2007) mass-size relations
       iaspect    = 0            !set constant aspect ratio (sensitivity study)
-      sphrflag   = 0            !all ice assumed spheres
+      sphrflag   = 1            !all ice assumed spheres
       redden     = 0            !reduces density of spheres
       homofreeze = 1            !homogeneous freezing
       snowflag  = 1             !ice --> snow & aggregation
@@ -3982,11 +3982,11 @@ CONTAINS
                                                     qconm = 1.0
                                                     qconn = 1.0
                                                     ftelwc = 0.0
-                                                    vt = umx(i,k,il) - umx(i,k,lc)
+                                                    vt = abs(umx(i,k,il) - umx(i,k,lc))
                                                     call saundx(isaund,temcg(i,k),qcwtmp,exy(il,lc),vt,xdia(i,k,ic),   &
                                                             &   rho(i,k),qsign,ftelwc,qconkq,qconm,qconn,idelq,rarfac)
                                                 ELSE ! nonigrd=1
-                                                    vt = umx(i,k,il) - umx(i,k,lc)
+                                                    vt = abs(umx(i,k,il) - umx(i,k,lc))
                                                     ! rarx only done for graup (as in nssl), doesn't matter since nonigrd is not 1 for now
                                                     rarx(i,k,lh) = (PSACWG*rho(i,k))*1.0e3*rho(i,k)/((pi/2.0)*xdia(i,k,lh)*an(i,1,k,lnh)) ! ! PSACWG: equate to qhacw cw collected by gw, cw->gw
                                                     call saundy(isaund,temcg(i,k),qcwtmp,rarx(i,k,il),vt,xdia(i,k,ic),   &
