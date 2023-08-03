@@ -1749,7 +1749,7 @@ CONTAINS
 !     3 for Mitchell's mass relations (stellars, columns)
 !     4 for Wood's (2007) mass-size relations
       iaspect    = 0            !set constant aspect ratio (sensitivity study)
-      sphrflag   = 1            !all ice assumed spheres
+      sphrflag   = 0            !all ice assumed spheres
       redden     = 0            !reduces density of spheres
       homofreeze = 1            !homogeneous freezing
       snowflag  = 1             !ice --> snow & aggregation
@@ -3192,7 +3192,7 @@ CONTAINS
                       an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) - tmp*prai*dt
                   end if
                   qs(i,k) = qs(i,k) + prai*dt
-                  ns(i,k) = ns(i,k) + nprai*dt
+!                  ns(i,k) = ns(i,k) + nprai*dt
                   
                   qi(i,k) = qi(i,k) - prai*dt
                   ni(i,k) = ni(i,k) - nprai*dt
@@ -8618,7 +8618,7 @@ CONTAINS
             fac = 0.0
         END IF
 
-        IF ( rarfac .gt. 0.0 ) THEN
+        IF ( rarfac .gt. 0.0 ) THEN ! rarfac = 1 default
             ibs = 0
         ELSE
             ibs = 1
@@ -8632,7 +8632,7 @@ CONTAINS
         IF ( ibs .eq. 1 .and. t .gt. -15.0 ) THEN
             rarc = Max( 0.0, Min( 3.29, -1.47 - 0.2*t ) )
         ELSE
-            IF (t .gt. tc ) THEN
+            IF (t .gt. tc ) THEN ! tc=-23.7 default
                 rarc = 1.0 + t*(7.9262e-2 + t*(4.4847e-2 +     &
                         &    t*(7.4754e-3 + t*(5.4686e-4 +     &
                                 &    t*(1.6737e-5 + t*1.7613e-7)))))
