@@ -3192,7 +3192,7 @@ CONTAINS
                       an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) - tmp*prai*dt
                   end if
                   qs(i,k) = qs(i,k) + prai*dt
-!                  ns(i,k) = ns(i,k) + nprai*dt
+                  ns(i,k) = ns(i,k) + nprai*dt
                   
                   qi(i,k) = qi(i,k) - prai*dt
                   ni(i,k) = ni(i,k) - nprai*dt
