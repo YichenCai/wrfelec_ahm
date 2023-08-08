@@ -2489,6 +2489,11 @@ rconfig   integer use_mp_re               namelist,physics     	1              1
 rconfig   real    ccn_conc                namelist,physics      1           1.0E8      h     "ccn_conc"                 "CCN concentration"                                                             "# m-3"
 rconfig   integer hail_opt                namelist,physics      1              0       rh    "hail_opt"                 "Hail/Graupel switch, 1:hail, 0:graupel"                                        ""
 
+# For AHM microphysics to choose spherical/nonspherical ice (sphrflag=1/0) and snow (1/2) yc 8.3.2023
+rconfig   integer ahm_sphrflag            namelist,physics      1              0       rh     "ahm_sphrflag"            "ice  shape flag, 1:sphere, 0:spheroid"   ""
+rconfig   integer ahm_snowflag            namelist,physics      1              2       rh     "ahm_snowflag"            "snow shape flag, 1:sphere, 2:spheroid"   ""
+
+
 # For Noah-MP
 rconfig   integer dveg        namelist,noah_mp      1           4         h    "dveg"     "dynamic vegetation (1 -> off ; 2 -> on)"   ""
 rconfig   integer opt_crs     namelist,noah_mp      1           1         h    "opt_crs"  "canopy stomatal resistance (1-> Ball-Berry; 2->Jarvis)"   ""

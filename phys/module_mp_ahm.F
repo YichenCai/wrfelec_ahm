@@ -106,6 +106,7 @@
       REAL, PRIVATE :: acoll(20,27), ancoll(20,27), cncoll(20,27), ddcoll(20,27)
       INTEGER, PRIVATE :: ii, jj, kk, ll, mm, nn, oo, iii, jjj, kkk, lll, mmm, nnn, ooo
 
+      integer :: ahm_sphrflag, ahm_snowflag
       !---------------------------------------------------------------------------
       !Explicit lightning public vars (add with caution)--------------------------
       integer :: ipelec = 0
@@ -178,11 +179,12 @@ CONTAINS
 !     NEEDS TO BE CALLED AT FIRST TIMESTEP,
 !     PRIOR TO CALL TO MAIN MICROPHYSICS INTERFACE
 !-------------------------------------------------------------------------------------
-      SUBROUTINE AHM_INIT(hail_opt,nssl_params,idonictmp)
+      SUBROUTINE AHM_INIT(hail_opt,nssl_params,sphrflag,snowflag,idonictmp)
 !************************************************************************************
 
       IMPLICIT NONE
       INTEGER, INTENT(IN):: hail_opt ! RAS
+      INTEGER, INTENT(IN):: sphrflag, snowflag
       !---------------------------------------------------------------------------
       !Explicit lightning --------------------------------------------------------
       real, intent(in), dimension(20) :: nssl_params ! for lightning
@@ -191,6 +193,8 @@ CONTAINS
       double precision :: arg
       integer :: i,j
 
+      ahm_sphrflag = sphrflag
+      ahm_snowflag = snowflag
       ipelec   = Nint(nssl_params(11))
       isaund   = Nint(nssl_params(12))
       IF ( present(idonictmp) ) THEN
@@ -1749,10 +1753,10 @@ CONTAINS
 !     3 for Mitchell's mass relations (stellars, columns)
 !     4 for Wood's (2007) mass-size relations
       iaspect    = 0            !set constant aspect ratio (sensitivity study)
-      sphrflag   = 0            !all ice assumed spheres
+      sphrflag   = ahm_sphrflag            !all ice assumed spheres
       redden     = 0            !reduces density of spheres
       homofreeze = 1            !homogeneous freezing
-      snowflag  = 1             !ice --> snow & aggregation
+      snowflag  = ahm_snowflag             !ice --> snow & aggregation
       meltflag = 1              !1 Jensen_Ishmael melting scheme, o/w instantaneous
       effflag = 1               !1 for ice-ice agg efficiency from connolly et al 2012
       SEDON      = 1            !sedimentation
@@ -3191,8 +3195,9 @@ CONTAINS
                       an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + tmp*prai*dt
                       an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) - tmp*prai*dt
                   end if
+                  !this is accretion of ice by existing snow so the snow number should not change
                   qs(i,k) = qs(i,k) + prai*dt
-                  ns(i,k) = ns(i,k) + nprai*dt
+                  !!ns(i,k) = ns(i,k) + nprai*dt
                   
                   qi(i,k) = qi(i,k) - prai*dt
                   ni(i,k) = ni(i,k) - nprai*dt
