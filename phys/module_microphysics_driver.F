@@ -72,7 +72,7 @@ SUBROUTINE microphysics_driver(                                          &
                       ,aice_curr,cice_curr,f_aice,f_cice         &
                       ,aipla_curr,aicol_curr,cipla_curr,cicol_curr       &
                       ,f_aipla,f_aicol,f_cipla,f_cicol                     & !for sulia
-                      ,asnow_curr,csnow_curr,f_asnow,f_csnow         &
+                      ,asnow_curr,csnow_curr,nusnow_curr,f_asnow,f_csnow,f_nusnow         &
 !===========================
 
                       ,qnwfa_curr,qnifa_curr                             & ! for water/ice-friendly aerosols
@@ -648,7 +648,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                                   ,evpmgout,pgmltout,qmultgout,qmultrgout,immersion  &
                                   ,praiout, cfrzr&
                  !AHM (sh with ipas agg)
-                                  ,asnow_curr,csnow_curr,qagg,qnagg,phis,rhos,cplx,cplxs &
+                                  ,asnow_curr,csnow_curr,nusnow_curr,qagg,qnagg,phis,rhos,cplx,cplxs &
                                                    ,csaci03d,chaci03d,chacs03d, csaci03d_morr       & ! yc added 9/23/2020 for i-g and s-g collision rates
                                                    ,umc,umr,umi,ums,umg,umh                         & ! yc added 9/08/2021 fall speed
                                                    ,rhog,rhoh                                  & ! yc added 9/08/2021 hydrometeor density from nssl2m
@@ -763,7 +763,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                        ,f_qrimef                                             &
                        ,f_qir,f_qib                                          & ! for P3
                        ,f_qnwfa, f_qnifa            &             ! Added by G. Thompson
-                       ,f_aice,f_cice,f_asnow,f_csnow  &                 !Sulia_harrington (AHM)
+                       ,f_aice,f_cice,f_asnow,f_csnow,f_nusnow  &                 !Sulia_harrington (AHM)
                        ,f_qipla, f_qicol, f_qnipla, f_qnicol &
                        ,f_aipla,f_aicol,f_cipla, f_cicol  !ahm, riming, sulia
 
@@ -1551,6 +1551,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          PRESENT (QI_CURR) .AND.      &
          PRESENT (AICE_CURR) .AND.PRESENT (ASNOW_CURR) .AND.      &
          PRESENT (CICE_CURR) .AND.PRESENT (CSNOW_CURR) .AND.      &
+         PRESENT (NUSNOW_CURR) .AND. &
          PRESENT (QS_CURR)  .AND. PRESENT (QNC_CURR) .AND.         &
          PRESENT (QNR_CURR) .AND. PRESENT (QNI_CURR) .AND.         &
          PRESENT (QNS_CURR) .AND. PRESENT (RHOICE).AND.         &
@@ -1615,6 +1616,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
              CI=cice_curr,                       &
              AS=asnow_curr,                       &
              CS=csnow_curr,                       &
+             NUS=nusnow_curr,                       &
              RHO=rho,                            &  !*
              PII=pi_phy,                         &  !*
              P=p,                                &  !*
@@ -1711,6 +1713,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      CI=cice_curr,                       &
                      AS=asnow_curr,                       &
                      CS=csnow_curr,                       &
+                     NUS=nusnow_curr,                       &
                      RHO=rho,                            &  !*
                      PII=pi_phy,                         &  !*
                      P=p,                                &  !*

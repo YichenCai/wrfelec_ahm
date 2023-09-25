@@ -4034,6 +4034,7 @@ BENCH_START(micro_driver_tim)
 
       &        , ASNOW_CURR=scalar(ims,kms,jms,P_ASNOW), F_ASNOW=F_ASNOW      & !for ahm ipas agg
       &        , CSNOW_CURR=scalar(ims,kms,jms,P_CSNOW), F_CSNOW=F_CSNOW      & !for ahm ipas agg
+      &        , NUSNOW_CURR=scalar(ims,kms,jms,P_NUSNOW), F_NUSNOW=F_NUSNOW      & !for ahm ipas agg
 
 
       &        , AIPLA_CURR=scalar(ims,kms,jms,P_AIPLA), F_AIPLA=F_AIPLA      &! for sulia

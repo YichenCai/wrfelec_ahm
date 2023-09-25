@@ -557,6 +557,8 @@ state   real    asnow           ikjftb  scalar      1         -     \
    i0rhusdf=(bdy_interp:dt)    "ASNOW"          "a-axis length mixing ratio, snow" "m kg(-1)"
 state   real    csnow           ikjftb  scalar      1         -     \
    i0rhusdf=(bdy_interp:dt)    "CSNOW"          "c-axis length mixing ratio, snow" "m kg(-1)"
+state   real    nusnow           ikjftb  scalar      1         -     \
+   i0rhusdf=(bdy_interp:dt)    "NUSNOW"          "bulk shape factor, snow" " "
 #sulia riming
 state   real    qnipla         ikjftb  scalar      1         -     \
    i0rhusdf=(bdy_interp:dt)    "QNIPLA"         "Ice Number concentration (plates)" "# kg-1"
@@ -2493,7 +2495,6 @@ rconfig   integer hail_opt                namelist,physics      1              0
 rconfig   integer ahm_sphrflag            namelist,physics      1              0       rh     "ahm_sphrflag"            "ice  shape flag, 1:sphere, 0:spheroid"   ""
 rconfig   integer ahm_snowflag            namelist,physics      1              2       rh     "ahm_snowflag"            "snow shape flag, 1:sphere, 2:spheroid"   ""
 
-
 # For Noah-MP
 rconfig   integer dveg        namelist,noah_mp      1           4         h    "dveg"     "dynamic vegetation (1 -> off ; 2 -> on)"   ""
 rconfig   integer opt_crs     namelist,noah_mp      1           1         h    "opt_crs"  "canopy stomatal resistance (1-> Ball-Berry; 2->Jarvis)"   ""
@@ -2818,7 +2819,7 @@ package   wdm6scheme      mp_physics==16               -             moist:qv,qc
 package   nssl_2mom       mp_physics==17               -             moist:qv,qc,qr,qi,qs,qg,qh;scalar:qndrop,qnr,qni,qns,qng,qnh,qvolg,qvolh;state:re_cloud,re_ice,re_snow
 package   nssl_2momccn    mp_physics==18               -             moist:qv,qc,qr,qi,qs,qg,qh;scalar:qnn,qndrop,qnr,qni,qns,qng,qnh,qvolg,qvolh;state:re_cloud,re_ice,re_snow
 package   nssl_1mom       mp_physics==19               -             moist:qv,qc,qr,qi,qs,qg,qh;scalar:qvolg
-package   ahm             mp_physics==20               -             moist:qv,qc,qr,qi,qs,qg;scalar:qni,qns,qnr,qnc,qng,aice,cice,asnow,csnow;state:ICEDEP,ICESUB,RAINEVAP,SNOWEVAP,SNOWMELT,SNOWDEP,SNOWSUB,SNOWACCR,CLOUDCOND,CLOUDEVAP,ICEMELT,ICENUC,RAINFRZ,CLOUDFRZ,QAGG,QNAGG,RHOICE,PHI,RELH,SEDR,SEDI,SEDS,SEDG,NAGGOUT,NRAGGOUT,NSAGGOUT,PRAOUT,CONTACT,PRCOUT,DEP,PRCIOUT,PSACWSOUT,QMULTSOUT,QMULTROUT,PIACROUT,PRACIOUT,PIACRSOUT,PRACISOUT,PRACGOUT,PSACWGOUT,PGSACWOUT,PGRACSOUT,PRDGOUT,EPRDGOUT,EVPMGOUT,PGMLTOUT,QMULTGOUT,QMULTRGOUT,IMMERSION,PRAIOUT,CFRZR,RAINACC,RAINACCT,SNOWACC,SNOWACCT,GRAUPELACC,GRAUPELACCT,FRZNACC,FRZNACCT,CPLX,PHIS,CPLXS,RHOIPLA,PHIPLA,RHOICOL,PHICOL
+package   ahm             mp_physics==20               -             moist:qv,qc,qr,qi,qs,qg;scalar:qni,qns,qnr,qnc,qng,aice,cice,asnow,csnow,nusnow;state:ICEDEP,ICESUB,RAINEVAP,SNOWEVAP,SNOWMELT,SNOWDEP,SNOWSUB,SNOWACCR,CLOUDCOND,CLOUDEVAP,ICEMELT,ICENUC,RAINFRZ,CLOUDFRZ,QAGG,QNAGG,RHOICE,PHI,RELH,SEDR,SEDI,SEDS,SEDG,NAGGOUT,NRAGGOUT,NSAGGOUT,PRAOUT,CONTACT,PRCOUT,DEP,PRCIOUT,PSACWSOUT,QMULTSOUT,QMULTROUT,PIACROUT,PRACIOUT,PIACRSOUT,PRACISOUT,PRACGOUT,PSACWGOUT,PGSACWOUT,PGRACSOUT,PRDGOUT,EPRDGOUT,EVPMGOUT,PGMLTOUT,QMULTGOUT,QMULTRGOUT,IMMERSION,PRAIOUT,CFRZR,RAINACC,RAINACCT,SNOWACC,SNOWACCT,GRAUPELACC,GRAUPELACCT,FRZNACC,FRZNACCT,CPLX,PHIS,CPLXS,RHOIPLA,PHIPLA,RHOICOL,PHICOL
 package   nssl_1momlfo    mp_physics==21               -             moist:qv,qc,qr,qi,qs,qg
 package   nssl_2momg      mp_physics==22               -             moist:qv,qc,qr,qi,qs,qg;scalar:qndrop,qnr,qni,qns,qng,qvolg;state:re_cloud,re_ice,re_snow
 package   thompsonaero    mp_physics==28               -             moist:qv,qc,qr,qi,qs,qg;scalar:qni,qnr,qnc,qnwfa,qnifa;state:re_cloud,re_ice,re_snow,qnwfa2d,taod5503d,taod5502d

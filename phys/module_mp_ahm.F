@@ -432,7 +432,7 @@ CONTAINS
 !-------------------------------------------------------------------------------
       SUBROUTINE MP_AHM(ID,ITIMESTEP,&
       TH, QV, QC, QR, QI, QS, QG, NC, NR, NI, NS,&
-      NG, AI, CI, AS, CS, RHO, PII, P, DT, DZ, HT, W,    &
+      NG, AI, CI, AS, CS, NUS, RHO, PII, P, DT, DZ, HT, W,    &
       ICEDEP, ICESUB, RAINEVAP, SNOWEVAP, &
       SNOWMELT, SNOWDEP, SNOWSUB, SNOWACCR,      &
       CLOUDCOND, CLOUDEVAP, ICEMELT, ICENUC,     &
@@ -517,7 +517,7 @@ CONTAINS
       ITIMESTEP,ID
 
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT):: &
-      QV, QC, QR, QS, QG, QI, NC, NR, NS, NG, NI, AI, CI, AS, CS, TH
+      QV, QC, QR, QS, QG, QI, NC, NR, NS, NG, NI, AI, CI, AS, CS, NUS, TH
 
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN):: &
       PII, P, DZ, RHO, W
@@ -542,8 +542,8 @@ CONTAINS
       REAL, DIMENSION(its:ite, kts:kte, jts:jte) ::T,THL
 
       REAL, DIMENSION(its:ite, kts:kte) :: QV2D, QC2D, QR2D, QS2D,   &
-      QG2D, QI2D, NC2D, NR2D, NS2D, NG2D, NI2D, AI2D, CI2D, AS2D,    &
-      CS2D, T2D, RHO2D, P2D, ICEDEP2D, ICESUB2D, RAINEVAP2D,         &
+      QG2D, QI2D, NC2D, NR2D, NS2D, NG2D, NI2D, AI2D, CI2D, AS2D,     &
+      CS2D, NUS2D, T2D, RHO2D, P2D, ICEDEP2D, ICESUB2D, RAINEVAP2D,         &
       SNOWEVAP2D, SNOWMELT2D, SNOWDEP2D, SNOWSUB2D, SNOWACCR2D,      &
       CLOUDCOND2D, CLOUDEVAP2D, ICEMELT2D, ICENUC2D, RAINFRZ2D,      &
       CLOUDFRZ2D, PHI2D, RHOICE2D, CPLX2D, PHIS2D, RHOS2D, CPLXS2D,  &
@@ -791,6 +791,7 @@ CONTAINS
                CI2D(i,k) = CI(i,k,j)
                AS2D(i,k) = AS(i,k,j)
                CS2D(i,k) = CS(i,k,j)
+               NUS2D(i,k) = NUS(i,k,j)
 
                T2D(i,k) = T(i,k,j)
 
@@ -849,7 +850,7 @@ CONTAINS
          call CPU_TIME(start)
          !print*,'sulia_harrington'
          CALL AHM_MICRO(T2D, DT, QV2D, QC2D, QR2D, QS2D, QG2D, QI2D,  &
-         NC2D, NR2D, NS2D, NG2D, NI2D, AI2D, CI2D, AS2D, CS2D, P2D,   &
+         NC2D, NR2D, NS2D, NG2D, NI2D, AI2D, CI2D, AS2D, CS2D, NUS2D, P2D,   &
          RHO2D, DZQ, IMS, IME, JMS, JME, KMS, KME, ITS, ITE, JTS, JTE,& 
          KTS, KTE, IDS, IDE, JDS, JDE, KDS, KDE, ITIMESTEP, ICEDEP2D, &
          ICESUB2D, RAINEVAP2D, SNOWEVAP2D, SNOWMELT2D, SNOWDEP2D,     &
@@ -1126,6 +1127,7 @@ CONTAINS
                CI(i,k,j) = CI2D(i,k)
                AS(i,k,j) = AS2D(i,k)
                CS(i,k,j) = CS2D(i,k)
+               NUS(i,k,j) = NUS2D(i,k)
                T(i,k,j) = T2D(i,k)
                TH(i,k,j) = T(i,k,j)/PII(i,k,j)
 
@@ -1231,7 +1233,7 @@ CONTAINS
 !      )
 !*****************************************************************************
       SUBROUTINE AHM_MICRO(t, dt, qv, qc, qr, qs, qg, qi, nc,      &
-      nr, ns, ng, ni, ai, ci, as, cs, p, rho, dzq, ims, ime, jms,  &
+      nr, ns, ng, ni, ai, ci, as, cs, nus, p, rho, dzq, ims, ime, jms,  &
       jme, kms, kme, its, ite, jts, jte, kts, kte, ids, ide, jds,  &
       jde, kds, kde, itimestep,icedep, icesub,                     &
       rainevap, snowevap, snowmelt, snowdep,                       &
@@ -1266,10 +1268,10 @@ CONTAINS
       ids,ide,jds,jde,kds,kde,&
       itimestep, nhrs
 
-      REAL, SAVE :: nus = 3.
+!      REAL, SAVE :: nus = 3.
 
       REAL, DIMENSION(its:ite,kts:kte), INTENT(INOUT) :: &
-      qv, qc, qr, qs, qg, qi, nc, nr, ns, ng, ni, ai, ci, as, cs, t
+      qv, qc, qr, qs, qg, qi, nc, nr, ns, ng, ni, ai, ci, as, cs, t, nus
  
 !      REAL, DIMENSION(its:ite,kts:kte), INTENT(OUT) :: &
       REAL, DIMENSION(its:ite,kts:kte):: &
@@ -1782,10 +1784,17 @@ CONTAINS
       
       qt_adv=0.0
       qt_sed=0.0
+!      print*, 'itimestep=', itimestep
+      if (itimestep.eq.1) print*, 'initializing nus' ; nus(:,:) = 3.
 
       DO i = its,ite
          DO k = kts,kte
-
+             IF(.not.(nus(i,k) .ge. 1))then
+                 print*, 'beginning nus less than one, stopping'
+                 print*, nus(i,k), ns(i,k), qs(i,k),ans, as(i,k)
+                 print*, i,j,k,itimestep*dt
+                 stop
+             END IF
             !ICE
             IF(qi(i,k).gt.qsmall.and.ni(i,k).gt.qsmall)THEN
                ni(i,k) = max(ni(i,k),qsmall)
@@ -1833,14 +1842,14 @@ CONTAINS
                IF(snowflag .eq. 2)THEN               
                   ns(i,k) = max(ns(i,k),qsmall)
                   
-                  if(cs(i,k).gt.qsmall)ans = ((as(i,k)**2)/(cs(i,k)*nus*ns(i,k)))**(1./3.)
-                  if(as(i,k).gt.qsmall)cns = ((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+                  if(cs(i,k).gt.qsmall)ans = ((as(i,k)**2)/(cs(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
+                  if(as(i,k).gt.qsmall)cns = ((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
                   
-                  as(i,k) = nus*ns(i,k)*ans
-                  cs(i,k) = nus*ns(i,k)*cns
+                  as(i,k) = nus(i,k)*ns(i,k)*ans
+                  cs(i,k) = nus(i,k)*ns(i,k)*cns
                   rns = (ans**2*cns)**(1./3.)
                   
-                  !if(as(i,k).gt.0.0)print*,'as0',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+                  !if(as(i,k).gt.0.0)print*,'as0',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
                END IF
             ELSE
                rhos(i,k) = 920.
@@ -2864,34 +2873,34 @@ CONTAINS
                   print*,'ns2',real(itimestep)*dt,i,k,ns(i,k)
                   ns(i,k) = max(ns(i,k),qsmall)
                   
-                  ans = as(i,k)/(nus*ns(i,k))
-                  cns = cs(i,k)/(nus*ns(i,k))
+                  ans = as(i,k)/(nus(i,k)*ns(i,k))
+                  cns = cs(i,k)/(nus(i,k)*ns(i,k))
 
                   if(isnan(ans).or..not.ieee_is_finite(ans))&
-                  print*,'ans',real(itimestep)*dt,i,k,ans,as(i,k),nus,ns(i,k)
+                  print*,'ans',real(itimestep)*dt,i,k,ans,as(i,k),nus(i,k),ns(i,k)
                   
 
-                  !print*,'snow1',itimestep, rhos(i,k),qs(i,k),ns(i,k),ans,cns,nus,as(i,k),cs(i,k)
+                  !print*,'snow1',itimestep, rhos(i,k),qs(i,k),ns(i,k),ans,cns,nus(i,k),as(i,k),cs(i,k)
                   !check that deltastr, rhobar, and rni are within reasonable bounds
                   IF(isnan(rns))print*,"BEFORECHECKS",rns
-                  CALL ICE_CHECKS(2, nus,ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
+                  CALL ICE_CHECKS(2, nus(i,k),ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
                        iaspect,sphrflag,redden)
                   IF(isnan(rns))print*,"AFTERCHECKS",rns
                     
-                  !CALL DSTR_CHECK(2,nus,ns(i,k),ans,cns,deltastrs,iaspect,sphrflag)
+                  !CALL DSTR_CHECK(2,nus(i,k),ns(i,k),ans,cns,deltastrs,iaspect,sphrflag)
                       !CALL RHO_CHECK(flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar)
-                  !CALL R_CHECK(nus,qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
+                  !CALL R_CHECK(nus(i,k),qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
                   !print*,'snow2',itimestep, rhos(i,k),deltastrs
-                  cs(i,k)=nus*ns(i,k)*cns
-                  as(i,k)=nus*ns(i,k)*ans
+                  cs(i,k)=nus(i,k)*ns(i,k)*cns
+                  as(i,k)=nus(i,k)*ns(i,k)*ans
                   if(isnan(ns(i,k)).or..not.ieee_is_finite(ns(i,k)))&
                   print*,'ns3',real(itimestep)*dt,i,k,ns(i,k)
                   !     get iwc to calculate iwc tendency
                   !     by substracting final and initial values
-                  vs = 4./3.*pi*rns**3.*exp(gammln(nus+deltastrs+2.))/exp(gammln(nus)) 
+                  vs = 4./3.*pi*rns**3.*exp(gammln(nus(i,k)+deltastrs+2.))/exp(gammln(nus(i,k)))
                   swci = ns(i,k)*rhos(i,k)*vs*rho(i,k)
                   if(isnan(swci))print*,'swci',real(itimestep)*dt,i,k,swci,&
-                  ns(i,k),rhos(i,k),vs,rho(i,k),deltastrs,rns,nus
+                  ns(i,k),rhos(i,k),vs,rho(i,k),deltastrs,rns,nus(i,k)
                   IF(iaspect .eq. 1) igr = .27
                   IF(sphrflag .eq. 1) igr=1.0
                   If(redden .eq. 1) rhobars = 100.
@@ -2902,7 +2911,7 @@ CONTAINS
                      nidum = ns(i,k)*rho(i,k)
                      
                      IF(isnan(rns))print*,"BEFOREEVOLVE",rns
-                     CALL EVOLVE(nus,ans,nidum,sui,sup,qvv,temp,press,igr,dt,swcf,&
+                     CALL EVOLVE(nus(i,k),ans,nidum,sui,sup,qvv,temp,press,igr,dt,swcf,&
                           cnsf,swci,phiis,phisf,cns,rns,rnsf,ansf,deltastrs,mu,&
                           rhos(i,k),vtbarbs,vtbarbms,vtbarblens,rhoa,i,k,iaspect&
                           ,ipart,sphrflag,redden,itimestep) 
@@ -2914,8 +2923,8 @@ CONTAINS
                      !     deposition rate for ice [=] kg/kg/s (mixing ratio rate)
                      
                      prds=(swcf-swci)/rho(i,k)/dt              
-                     ards=(ansf-ans)*nus*ns(i,k)/dt
-                     crds=(cnsf-cns)*nus*ns(i,k)/dt
+                     ards=(ansf-ans)*nus(i,k)*ns(i,k)/dt
+                     crds=(cnsf-cns)*nus(i,k)*ns(i,k)/dt
                      !if(isnan(prds).or.prds.lt.0.0)print*,'prds0',real(itimestep)*dt,i,k,&
                      !prds,swcf,swci,rho(i,k),dt
                   END IF           !EVOLVE_ON
@@ -2942,8 +2951,8 @@ CONTAINS
                        nsmlt = max((-ns(i,k)/dt),(ns(i,k)*qsmlt/qs(i,k)))
 
                        alphstr = co/ao**deltastrs
-                       gi=MIN((MAX((NINT(((nus+2.+deltastrs)*100000.)-355000+1)),1)),505001)
-                       tmpmelt= 4./3.*pi*alphstr*exp(gammln(gi))/exp(gammln(nus))
+                       gi=MIN((MAX((NINT(((nus(i,k)+2.+deltastrs)*100000.)-355000+1)),1)),505001)
+                       tmpmelt= 4./3.*pi*alphstr*exp(gammln(gi))/exp(gammln(nus(i,k)))
 
                        asmlt = (1./tmpmelt)*(1./rhos(i,k))*qsmlt + as(i,k)*nsmlt/ns(i,k)
                        csmlt = asmlt*cns/ans*(1.+(2.*deltastrs))/(2.+deltastrs)
@@ -3066,7 +3075,7 @@ CONTAINS
                qs(i,k)=qs(i,k)+(prds)*dt
                as(i,k)=as(i,k)+(ards)*dt
                cs(i,k)=cs(i,k)+(crds)*dt
-               !if(as(i,k).gt.0.0)print*,'as1',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+               !if(as(i,k).gt.0.0)print*,'as1',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
                IF(prds .gt. 0.0)THEN
                   snowdep(i,k) = prds
                ELSE
@@ -3098,19 +3107,19 @@ CONTAINS
                      alphv=4./3.*pi*alphstr
                      betam=2.+deltastrs   
                      
-                     ans=((qs(i,k)*exp(gammln(nus+betam)))/(rhos(i,k)*ns(i,k)*alphv*&
-                          exp(gammln(nus+betam))))**(1./betam)
+                     ans=((qs(i,k)*exp(gammln(nus(i,k)+betam)))/(rhos(i,k)*ns(i,k)*alphv*&
+                          exp(gammln(nus(i,k)+betam))))**(1./betam)
                      
                      cns=co*(ans/ao)**deltastrs
                   END IF           ! iflag = 1
                   
                   IF(isnan(rns))print*,"BEFORE-R-CHECK",rns
-                  CALL R_CHECK(2,nus,qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
+                  CALL R_CHECK(2,nus(i,k),qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
                   IF(isnan(rns))print*,"AFTER-R-CHECK",rns
                
-                  cs(i,k)=nus*ns(i,k)*cns
-                  as(i,k)=nus*ns(i,k)*ans
-                  !if(as(i,k).gt.0.0)print*,'as2',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+                  cs(i,k)=nus(i,k)*ns(i,k)*cns
+                  as(i,k)=nus(i,k)*ns(i,k)*ans
+                  !if(as(i,k).gt.0.0)print*,'as2',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
                END IF              ! q > qsmall
             end if !snowflag
 
@@ -3195,9 +3204,8 @@ CONTAINS
                       an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + tmp*prai*dt
                       an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) - tmp*prai*dt
                   end if
-                  !this is accretion of ice by existing snow so the snow number should not change
                   qs(i,k) = qs(i,k) + prai*dt
-                  !!ns(i,k) = ns(i,k) + nprai*dt
+!                  ns(i,k) = ns(i,k) + nprai*dt
                   
                   qi(i,k) = qi(i,k) - prai*dt
                   ni(i,k) = ni(i,k) - nprai*dt
@@ -3210,7 +3218,7 @@ CONTAINS
                   nidum = ni(i,k)*rho(i,k)  !#/kg --> #/m3
                   CALL COLL_LOOKUP(nidum,ani,cni,rhobar,agg,nagg,aagg,anagg,cnagg,ddagg)
                   !CALL CPU_TIME(start)
-                  !CALL COLL_COMPUTE(nidum,ani,cni,rhobar,nu,ns(i,k)*rho(i,k),ans,cns,rhobars,nus)
+                  !CALL COLL_COMPUTE(nidum,ani,cni,rhobar,nu,ns(i,k)*rho(i,k),ans,cns,rhobars,nus(i,k))
                   !CALL CPU_TIME(finish)
                   !print '("Time = ",f6.3," seconds.")',start,finish,finish-start
                   
@@ -3266,27 +3274,34 @@ CONTAINS
                      ns(i,k) = ns(i,k) + ns_new
                      
                      !if(ns(i,k).gt.10)print*,'ns>10',ns(i,k),ns_new,nagg
-                     !if(as(i,k).gt.10.0)print*,'as before', as(i,k),as_new, nus
+                     !if(as(i,k).gt.10.0)print*,'as before', as(i,k),as_new, nus(i,k)
                      
                      as(i,k) = as(i,k)*frac + as_new*(1.-frac)
                      ans = ans*frac +  ans_new*(1.-frac)
                      cns = cns*frac +  cns_new*(1.-frac)
                      
                      !if(as(i,k).gt.0.0)print*,'as3',real(itimestep)*dt,i,k,as(i,k),cs(i,k),&
-                     !((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+                     !((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
 
                      rhos(i,k) = rhos(i,k)*frac + dd_new*(1.-frac)
                      
                      if(ans.gt.0.)cs(i,k) = as(i,k)*cns/ans
-                
-                     if(ns(i,k)*ans.gt.0.)nus = max(as(i,k)/(ns(i,k)*ans),1.)
-                     !if(ns(i,k)*ans.gt.0.)nus = min(max(as(i,k)/(ns(i,k)*ans),1.),8.)
-                     IF(nus .gt. 10)print*,'nus',nus,as(i,k),ns(i,k),ans, as_new, frac,&
+
+                     tmp = nus(i,k)
+                     if(ns(i,k)*ans.gt.0.)nus(i,k) = max(as(i,k)/(ns(i,k)*ans),1.)
+                     !if(ns(i,k)*ans.gt.0.)nus(i,k) = min(max(as(i,k)/(ns(i,k)*ans),1.),8.)
+                     IF(nus(i,k) .gt. 10)print*,'nus(i,k)',nus(i,k),as(i,k),ns(i,k),ans, as_new, frac,&
                      qs_new,qs(i,k)
+                     IF(.not.(nus(i,k) .ge. 1))then
+                         print*, 'nus less than one, stopping'
+                         print*, nus(i,k), tmp, ns(i,k), qs(i,k),ans, as(i,k)
+                         print*, i,j,k,itimestep*dt
+                         stop
+                     END IF
 
                      IF(isnan(rns))print*,"BEFORECHECKAGAIN",rns
-                     CALL DSTR_CHECK(2,nus,ns(i,k),ans,cns,deltastrs,iaspect,sphrflag)
-                     CALL R_CHECK(2,nus,qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
+                     CALL DSTR_CHECK(2,nus(i,k),ns(i,k),ans,cns,deltastrs,iaspect,sphrflag)
+                     CALL R_CHECK(2,nus(i,k),qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
                      IF(isnan(rns))print*,"AFTERCHECKAGAIN",rns
 
                      qi(i,k) = qi(i,k) - agg*dt/rho(i,k)
@@ -3530,8 +3545,8 @@ CONTAINS
                             as(i,k)=max(as(i,k),QSMALL)
                             cs(i,k)=max(cs(i,k),QSMALL)
 
-                            ans=as(i,k)/(nus*ns(i,k))
-                            cns=cs(i,k)/(nus*ns(i,k))
+                            ans=as(i,k)/(nus(i,k)*ns(i,k))
+                            cns=cs(i,k)/(nus(i,k)*ns(i,k))
 
                             dsold = deltastrs
                             deltastrs = (log(cns)-log(ao))/(log(ans)-log(ao))
@@ -3553,7 +3568,7 @@ CONTAINS
                             endif
                             cns=ao**(1.-deltastrs)*ans**deltastrs
 
-                            CALL ICE_CHECKS(1, nus,ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
+                            CALL ICE_CHECKS(1, nus(i,k),ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
                             iaspect,sphrflag,redden)
 
                         END IF !qs > qsmall
@@ -3639,7 +3654,7 @@ CONTAINS
             END IF
             IF(snowflag.eq.2)THEN
                IF(qs(i,k).ge.qsmall.and.ans.gt.qsmall)THEN
-                  phis(i,k) = cns/ans*exp(gammln(nus+deltastrs-1.))/exp(gammln(nus))
+                  phis(i,k) = cns/ans*exp(gammln(nus(i,k)+deltastrs-1.))/exp(gammln(nus(i,k)))
                ELSE
                   phis(i,k)=1.
                   ans=0.
@@ -3778,8 +3793,8 @@ CONTAINS
                         fspeed = asn(k)*cons3/(lamselec**BS)
                         umx(i,k,ls) = min(fspeed,1.2*dum)
                     else if (snowflag.eq.2) then
-                        anselec = as(i,k)/(nus*ns(i,k))
-                        cnselec = cs(i,k)/(nus*ns(i,k))
+                        anselec = as(i,k)/(nus(i,k)*ns(i,k))
+                        cnselec = cs(i,k)/(nus(i,k)*ns(i,k))
                         if (snowdiaflag.eq.1) then
                             xdia(i,k,ls) = 2.*anselec
                         else if (snowdiaflag.eq.2) then
@@ -3789,7 +3804,7 @@ CONTAINS
                         else if (snowdiaflag.eq.4) then ! eq volumne radius
                             rhoselec = rhos(i,k)
                             deltastrselec = deltastrs
-                            CALL ICE_CHECKS(1,nus,an(i,1,k,lns),an(i,1,k,ls),anselec,cnselec,rnselec,deltastrselec,rhoselec,&
+                            CALL ICE_CHECKS(2,nus(i,k),an(i,1,k,lns),an(i,1,k,ls),anselec,cnselec,rnselec,deltastrselec,rhoselec,&
                                     iaspect,sphrflag,redden)
                             xdia(i,k,ls) = 2.*rnselec
                         end if
@@ -3892,6 +3907,13 @@ CONTAINS
                         csaci0(i,k) = pi/4.*gamma(bs+3.)*asn(k)*an(i,1,k,lni)*n0selec/lamselec**(bs+3.)*rho(i,k) ! same eq as for nprai except no eii
                     else if (snowflag.eq.2) then
                         csaci0(i,k) = pi/4.*xdia(i,k,ls)*umx(i,k,ls)*an(i,1,k,lni)*an(i,1,k,lns)
+                        if (isnan(csaci0(i,k))) then
+                            write(0,*) 'csaci0 hitting NaN'
+                            write(0,*) 'csaci0 =', csaci0(i,k)
+                            write(0,*) 'itimestep =', itimestep
+                            write(0,*) 'pi, xdias, ums, ni, ns = '
+                            write(0,*) pi, xdia(i,k,ls), umx(i,k,ls), an(i,1,k,lni), an(i,1,k,lns)
+                        end if
                     end if
                 END IF
 
@@ -4778,10 +4800,10 @@ CONTAINS
             rhoice(i,k)=rhobar
 
             IF(qs(i,k) .gt. qsmall)THEN
-               ans = as(i,k)/(ns(i,k)*nus)
-               cns = cs(i,k)/(ns(i,k)*nus)
-               as(i,k) = ans**2*cns*nus*ns(i,k)
-               cs(i,k) = cns**2*ans*nus*ns(i,k)
+               ans = as(i,k)/(ns(i,k)*nus(i,k))
+               cns = cs(i,k)/(ns(i,k)*nus(i,k))
+               as(i,k) = ans**2*cns*nus(i,k)*ns(i,k)
+               cs(i,k) = cns**2*ans*nus(i,k)*ns(i,k)
             END IF
 
          END DO !end k
@@ -5238,7 +5260,7 @@ CONTAINS
 !            cs(i,k) = max(cs(i,k),0.0)
 !            qg(i,k) = max(qg(i,k),0.0)
 !            ng(i,k) = max(ng(i,k),0.0)
-            !if(as(i,k).gt.0.0)print*,'as4',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+            !if(as(i,k).gt.0.0)print*,'as4',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
 
             evs = min(FUDGE*p(i,k),polysvp1(t(i,k),0)) !Pa
             evi = min(FUDGE*p(i,k),polysvp1(t(i,k),1)) !pa
@@ -6106,9 +6128,9 @@ CONTAINS
 
       !if(f.eq.1)print*,'upper index: ',i
       
-      if(i .gt. 1)then                  !when the modeled value exsits w/in bounds of lookup
+      if(i .gt. 1.and.value_found_flag.eq.1)then                  !when the modeled value exsits w/in bounds of lookup
          wght = (lookup_value(i)-modeled_value)/(lookup_value(i)-lookup_value(i-1))
-      else if(i.eq.1)then               !when the modeled value <= the smallest lookup value
+      else if(i.eq.1.and.value_found_flag.eq.1)then               !when the modeled value <= the smallest lookup value
          wght = (lookup_value(i)-modeled_value)/(lookup_value(i)-0.0)
       else if(i.eq.lookup_size.and.value_found_flag.eq.0)then !when the modeled value >= the largest lookup value
          wght = 0.0
