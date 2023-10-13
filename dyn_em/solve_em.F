@@ -3775,7 +3775,7 @@ BENCH_START(micro_driver_tim)
 #endif
 
 
-       if (dtm*(grid%itimestep).gt.60*60) then ! allow 1hr spin-up time for microphysics
+!       if (dtm*(grid%itimestep).gt.60*60) then ! allow 1hr spin-up time for microphysics
 
      CALL microphysics_driver(                                            &
       &         DT=dtm             ,DX=grid%dx              ,DY=grid%dy   &
@@ -4034,7 +4034,6 @@ BENCH_START(micro_driver_tim)
 
       &        , ASNOW_CURR=scalar(ims,kms,jms,P_ASNOW), F_ASNOW=F_ASNOW      & !for ahm ipas agg
       &        , CSNOW_CURR=scalar(ims,kms,jms,P_CSNOW), F_CSNOW=F_CSNOW      & !for ahm ipas agg
-      &        , NUSNOW_CURR=scalar(ims,kms,jms,P_NUSNOW), F_NUSNOW=F_NUSNOW      & !for ahm ipas agg
 
 
       &        , AIPLA_CURR=scalar(ims,kms,jms,P_AIPLA), F_AIPLA=F_AIPLA      &! for sulia
@@ -4080,7 +4079,7 @@ BENCH_START(micro_driver_tim)
 
                                                                           )
 
-           endif ! 1hr spinup
+!           endif ! 1hr spinup
 
 BENCH_END(micro_driver_tim)
 

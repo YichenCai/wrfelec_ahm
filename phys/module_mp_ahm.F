@@ -432,7 +432,7 @@ CONTAINS
 !-------------------------------------------------------------------------------
       SUBROUTINE MP_AHM(ID,ITIMESTEP,&
       TH, QV, QC, QR, QI, QS, QG, NC, NR, NI, NS,&
-      NG, AI, CI, AS, CS, NUS, RHO, PII, P, DT, DZ, HT, W,    &
+      NG, AI, CI, AS, CS, RHO, PII, P, DT, DZ, HT, W,    &
       ICEDEP, ICESUB, RAINEVAP, SNOWEVAP, &
       SNOWMELT, SNOWDEP, SNOWSUB, SNOWACCR,      &
       CLOUDCOND, CLOUDEVAP, ICEMELT, ICENUC,     &
@@ -517,7 +517,7 @@ CONTAINS
       ITIMESTEP,ID
 
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT):: &
-      QV, QC, QR, QS, QG, QI, NC, NR, NS, NG, NI, AI, CI, AS, CS, NUS, TH
+      QV, QC, QR, QS, QG, QI, NC, NR, NS, NG, NI, AI, CI, AS, CS, TH
 
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN):: &
       PII, P, DZ, RHO, W
@@ -543,7 +543,7 @@ CONTAINS
 
       REAL, DIMENSION(its:ite, kts:kte) :: QV2D, QC2D, QR2D, QS2D,   &
       QG2D, QI2D, NC2D, NR2D, NS2D, NG2D, NI2D, AI2D, CI2D, AS2D,     &
-      CS2D, NUS2D, T2D, RHO2D, P2D, ICEDEP2D, ICESUB2D, RAINEVAP2D,         &
+      CS2D, T2D, RHO2D, P2D, ICEDEP2D, ICESUB2D, RAINEVAP2D,         &
       SNOWEVAP2D, SNOWMELT2D, SNOWDEP2D, SNOWSUB2D, SNOWACCR2D,      &
       CLOUDCOND2D, CLOUDEVAP2D, ICEMELT2D, ICENUC2D, RAINFRZ2D,      &
       CLOUDFRZ2D, PHI2D, RHOICE2D, CPLX2D, PHIS2D, RHOS2D, CPLXS2D,  &
@@ -791,7 +791,6 @@ CONTAINS
                CI2D(i,k) = CI(i,k,j)
                AS2D(i,k) = AS(i,k,j)
                CS2D(i,k) = CS(i,k,j)
-               NUS2D(i,k) = NUS(i,k,j)
 
                T2D(i,k) = T(i,k,j)
 
@@ -850,7 +849,7 @@ CONTAINS
          call CPU_TIME(start)
          !print*,'sulia_harrington'
          CALL AHM_MICRO(T2D, DT, QV2D, QC2D, QR2D, QS2D, QG2D, QI2D,  &
-         NC2D, NR2D, NS2D, NG2D, NI2D, AI2D, CI2D, AS2D, CS2D, NUS2D, P2D,   &
+         NC2D, NR2D, NS2D, NG2D, NI2D, AI2D, CI2D, AS2D, CS2D, P2D,   &
          RHO2D, DZQ, IMS, IME, JMS, JME, KMS, KME, ITS, ITE, JTS, JTE,& 
          KTS, KTE, IDS, IDE, JDS, JDE, KDS, KDE, ITIMESTEP, ICEDEP2D, &
          ICESUB2D, RAINEVAP2D, SNOWEVAP2D, SNOWMELT2D, SNOWDEP2D,     &
@@ -1127,7 +1126,6 @@ CONTAINS
                CI(i,k,j) = CI2D(i,k)
                AS(i,k,j) = AS2D(i,k)
                CS(i,k,j) = CS2D(i,k)
-               NUS(i,k,j) = NUS2D(i,k)
                T(i,k,j) = T2D(i,k)
                TH(i,k,j) = T(i,k,j)/PII(i,k,j)
 
@@ -1233,7 +1231,7 @@ CONTAINS
 !      )
 !*****************************************************************************
       SUBROUTINE AHM_MICRO(t, dt, qv, qc, qr, qs, qg, qi, nc,      &
-      nr, ns, ng, ni, ai, ci, as, cs, nus, p, rho, dzq, ims, ime, jms,  &
+      nr, ns, ng, ni, ai, ci, as, cs, p, rho, dzq, ims, ime, jms,  &
       jme, kms, kme, its, ite, jts, jte, kts, kte, ids, ide, jds,  &
       jde, kds, kde, itimestep,icedep, icesub,                     &
       rainevap, snowevap, snowmelt, snowdep,                       &
@@ -1268,10 +1266,10 @@ CONTAINS
       ids,ide,jds,jde,kds,kde,&
       itimestep, nhrs
 
-!      REAL, SAVE :: nus = 3.
+      REAL, SAVE :: nus = 3.
 
       REAL, DIMENSION(its:ite,kts:kte), INTENT(INOUT) :: &
-      qv, qc, qr, qs, qg, qi, nc, nr, ns, ng, ni, ai, ci, as, cs, t, nus
+      qv, qc, qr, qs, qg, qi, nc, nr, ns, ng, ni, ai, ci, as, cs, t
  
 !      REAL, DIMENSION(its:ite,kts:kte), INTENT(OUT) :: &
       REAL, DIMENSION(its:ite,kts:kte):: &
@@ -1499,6 +1497,7 @@ CONTAINS
 
 
       ! tmps..
+      real tmpas, tmpcs, tmpns
       REAL TMP, tmppre
       REAL :: tmp1 = 0.
       REAL CCWTMP,CCITMP ! ,CIPTMP,CIRTMP
@@ -1784,17 +1783,12 @@ CONTAINS
       
       qt_adv=0.0
       qt_sed=0.0
-!      print*, 'itimestep=', itimestep
-      if (itimestep.eq.1) print*, 'initializing nus' ; nus(:,:) = 3.
 
       DO i = its,ite
          DO k = kts,kte
-             IF(.not.(nus(i,k) .ge. 1))then
-                 print*, 'beginning nus less than one, stopping'
-                 print*, nus(i,k), ns(i,k), qs(i,k),ans, as(i,k)
-                 print*, i,j,k,itimestep*dt
-                 stop
-             END IF
+               ani = 0.0; cni = 0.0
+               ans = 0.0; cns = 0.0
+               nus = 3.0
             !ICE
             IF(qi(i,k).gt.qsmall.and.ni(i,k).gt.qsmall)THEN
                ni(i,k) = max(ni(i,k),qsmall)
@@ -1840,16 +1834,17 @@ CONTAINS
             !SNOW (AGGREGATES)
             IF(qs(i,k).gt.qsmall.and.ns(i,k).gt.qsmall)THEN  
                IF(snowflag .eq. 2)THEN               
+                     if(isnan(as(i,k)).or..not.ieee_is_finite(as(i,k)))&
+                             print*,'1st check as(i,k)',real(itimestep)*dt,i,k,as(i,k),cs(i,k),nus,ns(i,k)
+                     if(isnan(cs(i,k)).or..not.ieee_is_finite(cs(i,k)))&
+                             print*,'1st check cs(i,k)',real(itimestep)*dt,i,k,as(i,k),cs(i,k),nus,ns(i,k)
                   ns(i,k) = max(ns(i,k),qsmall)
-                  
-                  if(cs(i,k).gt.qsmall)ans = ((as(i,k)**2)/(cs(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
-                  if(as(i,k).gt.qsmall)cns = ((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
-                  
-                  as(i,k) = nus(i,k)*ns(i,k)*ans
-                  cs(i,k) = nus(i,k)*ns(i,k)*cns
-                  rns = (ans**2*cns)**(1./3.)
-                  
-                  !if(as(i,k).gt.0.0)print*,'as0',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
+                  as(i,k) = max(as(i,k),qsmall)
+                  cs(i,k) = max(cs(i,k),qsmall)
+
+                  if(cs(i,k).gt.qsmall)ans = ((as(i,k)**2)/(cs(i,k)*nus*ns(i,k)))**(1./3.)
+                  if(as(i,k).gt.qsmall)cns = ((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+
                END IF
             ELSE
                rhos(i,k) = 920.
@@ -1864,7 +1859,22 @@ CONTAINS
                    an(i,1,k,lsc(ls)) = 0.0
                end if
             END IF
-            
+               tmpas = as(i,k)
+               tmpcs = cs(i,k)
+               tmpns = ns(i,k)
+               as(i,k) = nus*ns(i,k)*ans
+               cs(i,k) = nus*ns(i,k)*cns
+               rns = (ans**2*cns)**(1./3.)
+               if(isnan(as(i,k)).or..not.ieee_is_finite(as(i,k)))&
+                       print*,'2nd check as(i,k)',real(itimestep)*dt,j,i,k,ans,cns,rns,as(i,k),cs(i,k),nus,ns(i,k),tmpas,tmpcs,tmpns
+               if(isnan(cs(i,k)).or..not.ieee_is_finite(cs(i,k)))&
+                       print*,'2nd check cs(i,k)',real(itimestep)*dt,j,i,k,ans,cns,rns,as(i,k),cs(i,k),nus,ns(i,k),tmpas,tmpcs,tmpns
+               !sample output:    as is too big compared to cs, leading to Inf in ans, and then Inf in as.
+               !                     2nd check as(i,k)   2340.000              17          94          56
+               !                     ans=Infinity  cns=7.5622885E-13       rns=Infinity       as=Infinity  cs=7.6323211E-16
+               !                     nus=1.000000      ns=1.0092608E-03  tmpas=2.2910620E+11  tmpcs=9.9999998E-15  1.0092608E-03
+               !if(as(i,k).gt.0.0)print*,'as0',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
+
 
             !GRAUPEL
             IF(qg(i,k).lt.qsmall)THEN
@@ -2797,7 +2807,7 @@ CONTAINS
                
 
                CALL ICE_CHECKS(1, nu,ni(i,k),qi(i,k),ani,cni,rni,deltastr,rhobar,&
-               iaspect,sphrflag,redden)
+               iaspect,sphrflag,redden,i,j,k,itimestep,dt)
                
                
                ci(i,k)=nu*ni(i,k)*cni
@@ -2873,34 +2883,34 @@ CONTAINS
                   print*,'ns2',real(itimestep)*dt,i,k,ns(i,k)
                   ns(i,k) = max(ns(i,k),qsmall)
                   
-                  ans = as(i,k)/(nus(i,k)*ns(i,k))
-                  cns = cs(i,k)/(nus(i,k)*ns(i,k))
+                  ans = as(i,k)/(nus*ns(i,k))
+                  cns = cs(i,k)/(nus*ns(i,k))
 
                   if(isnan(ans).or..not.ieee_is_finite(ans))&
-                  print*,'ans',real(itimestep)*dt,i,k,ans,as(i,k),nus(i,k),ns(i,k)
+                  print*,'ans',real(itimestep)*dt,i,k,ans,as(i,k),nus,ns(i,k)
                   
 
-                  !print*,'snow1',itimestep, rhos(i,k),qs(i,k),ns(i,k),ans,cns,nus(i,k),as(i,k),cs(i,k)
+                  !print*,'snow1',itimestep, rhos(i,k),qs(i,k),ns(i,k),ans,cns,nus,as(i,k),cs(i,k)
                   !check that deltastr, rhobar, and rni are within reasonable bounds
-                  IF(isnan(rns))print*,"BEFORECHECKS",rns
-                  CALL ICE_CHECKS(2, nus(i,k),ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
-                       iaspect,sphrflag,redden)
-                  IF(isnan(rns))print*,"AFTERCHECKS",rns
+                  IF(isnan(rns))print*,"BEFORECHECKS",rns,as(i,k),cs(i,k),'ijkt=',i,j,k,real(itimestep)*dt
+                  CALL ICE_CHECKS(2, nus,ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
+                       iaspect,sphrflag,redden,i,j,k,itimestep,dt)
+                  IF(isnan(rns))print*,"AFTERCHECKS",rns,as(i,k),cs(i,k),'ijkt=',i,j,k,real(itimestep)*dt
                     
-                  !CALL DSTR_CHECK(2,nus(i,k),ns(i,k),ans,cns,deltastrs,iaspect,sphrflag)
+                  !CALL DSTR_CHECK(2,nus,ns(i,k),ans,cns,deltastrs,iaspect,sphrflag)
                       !CALL RHO_CHECK(flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar)
-                  !CALL R_CHECK(nus(i,k),qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
+                  !CALL R_CHECK(nus,qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
                   !print*,'snow2',itimestep, rhos(i,k),deltastrs
-                  cs(i,k)=nus(i,k)*ns(i,k)*cns
-                  as(i,k)=nus(i,k)*ns(i,k)*ans
+                  cs(i,k)=nus*ns(i,k)*cns
+                  as(i,k)=nus*ns(i,k)*ans
                   if(isnan(ns(i,k)).or..not.ieee_is_finite(ns(i,k)))&
                   print*,'ns3',real(itimestep)*dt,i,k,ns(i,k)
                   !     get iwc to calculate iwc tendency
                   !     by substracting final and initial values
-                  vs = 4./3.*pi*rns**3.*exp(gammln(nus(i,k)+deltastrs+2.))/exp(gammln(nus(i,k)))
+                  vs = 4./3.*pi*rns**3.*exp(gammln(nus+deltastrs+2.))/exp(gammln(nus))
                   swci = ns(i,k)*rhos(i,k)*vs*rho(i,k)
                   if(isnan(swci))print*,'swci',real(itimestep)*dt,i,k,swci,&
-                  ns(i,k),rhos(i,k),vs,rho(i,k),deltastrs,rns,nus(i,k)
+                  ns(i,k),rhos(i,k),vs,rho(i,k),deltastrs,rns,nus,'ijkt=',i,j,k,real(itimestep)*dt
                   IF(iaspect .eq. 1) igr = .27
                   IF(sphrflag .eq. 1) igr=1.0
                   If(redden .eq. 1) rhobars = 100.
@@ -2910,12 +2920,12 @@ CONTAINS
                      
                      nidum = ns(i,k)*rho(i,k)
                      
-                     IF(isnan(rns))print*,"BEFOREEVOLVE",rns
-                     CALL EVOLVE(nus(i,k),ans,nidum,sui,sup,qvv,temp,press,igr,dt,swcf,&
+                     IF(isnan(rns))print*,"BEFOREEVOLVE",rns,ansf,cnsf,ans,cns,nus,ns(i,k),'ijkt=',i,j,k,real(itimestep)*dt
+                     CALL EVOLVE(nus,ans,nidum,sui,sup,qvv,temp,press,igr,dt,swcf,&
                           cnsf,swci,phiis,phisf,cns,rns,rnsf,ansf,deltastrs,mu,&
                           rhos(i,k),vtbarbs,vtbarbms,vtbarblens,rhoa,i,k,iaspect&
                           ,ipart,sphrflag,redden,itimestep) 
-                     IF(isnan(rns))print*,"AFTEREVOLVE",rns
+                     IF(isnan(rns))print*,"AFTEREVOLVE",rns,ansf,cnsf,ans,cns,nus,ns(i,k),'ijkt=',i,j,k,real(itimestep)*dt
                            
                      phis(i,k)=phisf
                      
@@ -2923,8 +2933,8 @@ CONTAINS
                      !     deposition rate for ice [=] kg/kg/s (mixing ratio rate)
                      
                      prds=(swcf-swci)/rho(i,k)/dt              
-                     ards=(ansf-ans)*nus(i,k)*ns(i,k)/dt
-                     crds=(cnsf-cns)*nus(i,k)*ns(i,k)/dt
+                     ards=(ansf-ans)*nus*ns(i,k)/dt
+                     crds=(cnsf-cns)*nus*ns(i,k)/dt
                      !if(isnan(prds).or.prds.lt.0.0)print*,'prds0',real(itimestep)*dt,i,k,&
                      !prds,swcf,swci,rho(i,k),dt
                   END IF           !EVOLVE_ON
@@ -2951,8 +2961,8 @@ CONTAINS
                        nsmlt = max((-ns(i,k)/dt),(ns(i,k)*qsmlt/qs(i,k)))
 
                        alphstr = co/ao**deltastrs
-                       gi=MIN((MAX((NINT(((nus(i,k)+2.+deltastrs)*100000.)-355000+1)),1)),505001)
-                       tmpmelt= 4./3.*pi*alphstr*exp(gammln(gi))/exp(gammln(nus(i,k)))
+                       gi=MIN((MAX((NINT(((nus+2.+deltastrs)*100000.)-355000+1)),1)),505001)
+                       tmpmelt= 4./3.*pi*alphstr*exp(gammln(gi))/exp(gammln(nus))
 
                        asmlt = (1./tmpmelt)*(1./rhos(i,k))*qsmlt + as(i,k)*nsmlt/ns(i,k)
                        csmlt = asmlt*cns/ans*(1.+(2.*deltastrs))/(2.+deltastrs)
@@ -3060,7 +3070,7 @@ CONTAINS
                   ai(i,k)=nu*ni(i,k)*ani
                END IF           ! iflag = 1
 
-               CALL R_CHECK(1,nu,qi(i,k),ni(i,k),cni,ani,rni,rhobar,deltastr)
+               CALL R_CHECK(1,nu,qi(i,k),ni(i,k),cni,ani,rni,rhobar,deltastr,i,j,k,itimestep,dt)
                
                ci(i,k)=nu*ni(i,k)*cni
                ai(i,k)=nu*ni(i,k)*ani
@@ -3075,7 +3085,7 @@ CONTAINS
                qs(i,k)=qs(i,k)+(prds)*dt
                as(i,k)=as(i,k)+(ards)*dt
                cs(i,k)=cs(i,k)+(crds)*dt
-               !if(as(i,k).gt.0.0)print*,'as1',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
+               !if(as(i,k).gt.0.0)print*,'as1',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
                IF(prds .gt. 0.0)THEN
                   snowdep(i,k) = prds
                ELSE
@@ -3107,19 +3117,19 @@ CONTAINS
                      alphv=4./3.*pi*alphstr
                      betam=2.+deltastrs   
                      
-                     ans=((qs(i,k)*exp(gammln(nus(i,k)+betam)))/(rhos(i,k)*ns(i,k)*alphv*&
-                          exp(gammln(nus(i,k)+betam))))**(1./betam)
+                     ans=((qs(i,k)*exp(gammln(nus+betam)))/(rhos(i,k)*ns(i,k)*alphv*&
+                          exp(gammln(nus+betam))))**(1./betam)
                      
                      cns=co*(ans/ao)**deltastrs
                   END IF           ! iflag = 1
                   
-                  IF(isnan(rns))print*,"BEFORE-R-CHECK",rns
-                  CALL R_CHECK(2,nus(i,k),qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
-                  IF(isnan(rns))print*,"AFTER-R-CHECK",rns
+                  IF(isnan(rns))print*,"BEFORE-R-CHECK",rns,'ijkt=',i,j,k,real(itimestep)*dt
+                  CALL R_CHECK(2,nus,qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs,i,j,k,itimestep,dt)
+                  IF(isnan(rns))print*,"AFTER-R-CHECK",rns,'ijkt=',i,j,k,real(itimestep)*dt
                
-                  cs(i,k)=nus(i,k)*ns(i,k)*cns
-                  as(i,k)=nus(i,k)*ns(i,k)*ans
-                  !if(as(i,k).gt.0.0)print*,'as2',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
+                  cs(i,k)=nus*ns(i,k)*cns
+                  as(i,k)=nus*ns(i,k)*ans
+                  !if(as(i,k).gt.0.0)print*,'as2',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
                END IF              ! q > qsmall
             end if !snowflag
 
@@ -3204,6 +3214,7 @@ CONTAINS
                       an(i,1,k,lsc(ls)) = an(i,1,k,lsc(ls)) + tmp*prai*dt
                       an(i,1,k,lsc(li)) = an(i,1,k,lsc(li)) - tmp*prai*dt
                   end if
+                  !this is accretion of ice by existing snow so the snow number should not change
                   qs(i,k) = qs(i,k) + prai*dt
 !                  ns(i,k) = ns(i,k) + nprai*dt
                   
@@ -3217,8 +3228,9 @@ CONTAINS
                   
                   nidum = ni(i,k)*rho(i,k)  !#/kg --> #/m3
                   CALL COLL_LOOKUP(nidum,ani,cni,rhobar,agg,nagg,aagg,anagg,cnagg,ddagg)
+                  !print*,'COLL_LOOKUP_ICE',i,k,nidum,ani,cni,rhobar,agg,nagg,aagg,anagg,cnagg,ddagg
                   !CALL CPU_TIME(start)
-                  !CALL COLL_COMPUTE(nidum,ani,cni,rhobar,nu,ns(i,k)*rho(i,k),ans,cns,rhobars,nus(i,k))
+                  !CALL COLL_COMPUTE(nidum,ani,cni,rhobar,nu,ns(i,k)*rho(i,k),ans,cns,rhobars,nus)
                   !CALL CPU_TIME(finish)
                   !print '("Time = ",f6.3," seconds.")',start,finish,finish-start
                   
@@ -3274,38 +3286,31 @@ CONTAINS
                      ns(i,k) = ns(i,k) + ns_new
                      
                      !if(ns(i,k).gt.10)print*,'ns>10',ns(i,k),ns_new,nagg
-                     !if(as(i,k).gt.10.0)print*,'as before', as(i,k),as_new, nus(i,k)
+                     !if(as(i,k).gt.10.0)print*,'as before', as(i,k),as_new, nus
                      
-                     as(i,k) = as(i,k)*frac + as_new*(1.-frac)
+!                     as(i,k) = as(i,k)*frac + as_new*(1.-frac)
                      ans = ans*frac +  ans_new*(1.-frac)
                      cns = cns*frac +  cns_new*(1.-frac)
                      
                      !if(as(i,k).gt.0.0)print*,'as3',real(itimestep)*dt,i,k,as(i,k),cs(i,k),&
-                     !((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
+                     !((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
 
                      rhos(i,k) = rhos(i,k)*frac + dd_new*(1.-frac)
-                     
+                     as(i,k) = nus * ns(i,k) * ans
                      if(ans.gt.0.)cs(i,k) = as(i,k)*cns/ans
 
-                     tmp = nus(i,k)
-                     if(ns(i,k)*ans.gt.0.)nus(i,k) = max(as(i,k)/(ns(i,k)*ans),1.)
-                     !if(ns(i,k)*ans.gt.0.)nus(i,k) = min(max(as(i,k)/(ns(i,k)*ans),1.),8.)
-                     IF(nus(i,k) .gt. 10)print*,'nus(i,k)',nus(i,k),as(i,k),ns(i,k),ans, as_new, frac,&
+!                     if(ns(i,k)*ans.gt.0.)nus = max(as(i,k)/(ns(i,k)*ans),1.)
+                     !if(ns(i,k)*ans.gt.0.)nus = min(max(as(i,k)/(ns(i,k)*ans),1.),8.)
+                     IF(nus .gt. 10)print*,'nus',nus,as(i,k),ns(i,k),ans, as_new, frac,&
                      qs_new,qs(i,k)
-                     IF(.not.(nus(i,k) .ge. 1))then
-                         print*, 'nus less than one, stopping'
-                         print*, nus(i,k), tmp, ns(i,k), qs(i,k),ans, as(i,k)
-                         print*, i,j,k,itimestep*dt
-                         stop
-                     END IF
 
-                     IF(isnan(rns))print*,"BEFORECHECKAGAIN",rns
-                     CALL DSTR_CHECK(2,nus(i,k),ns(i,k),ans,cns,deltastrs,iaspect,sphrflag)
-                     CALL R_CHECK(2,nus(i,k),qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs)
-                     IF(isnan(rns))print*,"AFTERCHECKAGAIN",rns
+                     IF(isnan(rns))print*,"BEFORECHECKAGAIN",rns,'ijkt=',i,j,k,real(itimestep)*dt
+                     CALL DSTR_CHECK(2,nus,ns(i,k),ans,cns,deltastrs,iaspect,sphrflag,i,j,k,itimestep,dt)
+                     CALL R_CHECK(2,nus,qs(i,k),ns(i,k),cns,ans,rns,rhos(i,k),deltastrs,i,j,k,itimestep,dt)
+                     IF(isnan(rns))print*,"AFTERCHECKAGAIN",rns,'ijkt=',i,j,k,real(itimestep)*dt
 
                      qi(i,k) = qi(i,k) - agg*dt/rho(i,k)
-                     ni(i,k) = ni(i,k) - nagg*dt/rho(i,k)
+                     ni(i,k) = ni(i,k) - 2*nagg*dt/rho(i,k) !ice-ice collection losing 2*n what is gained for snow
 
                      qagg(i,k) = agg/rho(i,k)
                      qnagg(i,k) = nagg/rho(i,k)
@@ -3385,8 +3390,8 @@ CONTAINS
                cni=ci(i,k)/(nu*ni(i,k))
 
 !     final check on limits for deltastr, rhobar
-               CALL DSTR_CHECK(1,nu,ni(i,k),ani,cni,deltastr,iaspect,sphrflag)
-               CALL RHO_CHECK(1,nu,deltastr,qi(i,k),ni(i,k),ani,cni,sphrflag,redden,rhobar)
+               CALL DSTR_CHECK(1,nu,ni(i,k),ani,cni,deltastr,iaspect,sphrflag,i,j,k,itimestep,dt)
+               CALL RHO_CHECK(1,nu,deltastr,qi(i,k),ni(i,k),ani,cni,sphrflag,redden,rhobar,i,j,k,itimestep,dt)
                ci(i,k)=nu*ni(i,k)*cni
                ai(i,k)=nu*ni(i,k)*ani
 
@@ -3502,7 +3507,7 @@ CONTAINS
                         cni=ao**(1.-deltastr)*ani**deltastr
 
                         CALL ICE_CHECKS(1, nu,ni(i,k),qi(i,k),ani,cni,rni,deltastr,rhobar,&
-                        iaspect,sphrflag,redden)
+                        iaspect,sphrflag,redden,i,j,k,itimestep,dt)
 
                     END IF !qi > qsmall
 
@@ -3545,8 +3550,8 @@ CONTAINS
                             as(i,k)=max(as(i,k),QSMALL)
                             cs(i,k)=max(cs(i,k),QSMALL)
 
-                            ans=as(i,k)/(nus(i,k)*ns(i,k))
-                            cns=cs(i,k)/(nus(i,k)*ns(i,k))
+                            ans=as(i,k)/(nus*ns(i,k))
+                            cns=cs(i,k)/(nus*ns(i,k))
 
                             dsold = deltastrs
                             deltastrs = (log(cns)-log(ao))/(log(ans)-log(ao))
@@ -3568,8 +3573,8 @@ CONTAINS
                             endif
                             cns=ao**(1.-deltastrs)*ans**deltastrs
 
-                            CALL ICE_CHECKS(1, nus(i,k),ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
-                            iaspect,sphrflag,redden)
+                            CALL ICE_CHECKS(1, nus,ns(i,k),qs(i,k),ans,cns,rns,deltastrs,rhos(i,k),&
+                            iaspect,sphrflag,redden,i,j,k,itimestep,dt)
 
                         END IF !qs > qsmall
                     END IF !snowflag
@@ -3654,7 +3659,7 @@ CONTAINS
             END IF
             IF(snowflag.eq.2)THEN
                IF(qs(i,k).ge.qsmall.and.ans.gt.qsmall)THEN
-                  phis(i,k) = cns/ans*exp(gammln(nus(i,k)+deltastrs-1.))/exp(gammln(nus(i,k)))
+                  phis(i,k) = cns/ans*exp(gammln(nus+deltastrs-1.))/exp(gammln(nus))
                ELSE
                   phis(i,k)=1.
                   ans=0.
@@ -3793,8 +3798,8 @@ CONTAINS
                         fspeed = asn(k)*cons3/(lamselec**BS)
                         umx(i,k,ls) = min(fspeed,1.2*dum)
                     else if (snowflag.eq.2) then
-                        anselec = as(i,k)/(nus(i,k)*ns(i,k))
-                        cnselec = cs(i,k)/(nus(i,k)*ns(i,k))
+                        anselec = as(i,k)/(nus*ns(i,k))
+                        cnselec = cs(i,k)/(nus*ns(i,k))
                         if (snowdiaflag.eq.1) then
                             xdia(i,k,ls) = 2.*anselec
                         else if (snowdiaflag.eq.2) then
@@ -3804,8 +3809,8 @@ CONTAINS
                         else if (snowdiaflag.eq.4) then ! eq volumne radius
                             rhoselec = rhos(i,k)
                             deltastrselec = deltastrs
-                            CALL ICE_CHECKS(2,nus(i,k),an(i,1,k,lns),an(i,1,k,ls),anselec,cnselec,rnselec,deltastrselec,rhoselec,&
-                                    iaspect,sphrflag,redden)
+                            CALL ICE_CHECKS(2,nus,an(i,1,k,lns),an(i,1,k,ls),anselec,cnselec,rnselec,deltastrselec,rhoselec,&
+                                    iaspect,sphrflag,redden,i,j,k,itimestep,dt)
                             xdia(i,k,ls) = 2.*rnselec
                         end if
 
@@ -3880,7 +3885,7 @@ CONTAINS
                             rhobarelec = rhobar
                             deltastrelec = deltastr
                             CALL ICE_CHECKS(1,nu,an(i,1,k,lni),an(i,1,k,li),anielec,cnielec,rnielec,deltastrelec,rhoielec,&
-                                    iaspect,sphrflag,redden)
+                                    iaspect,sphrflag,redden,i,j,k,itimestep,dt)
                             xdia(i,k,li) = 2.*rnielec
                         end if
                     end if
@@ -4799,13 +4804,28 @@ CONTAINS
             END IF
             rhoice(i,k)=rhobar
 
-            IF(qs(i,k) .gt. qsmall)THEN
-               ans = as(i,k)/(ns(i,k)*nus(i,k))
-               cns = cs(i,k)/(ns(i,k)*nus(i,k))
-               as(i,k) = ans**2*cns*nus(i,k)*ns(i,k)
-               cs(i,k) = cns**2*ans*nus(i,k)*ns(i,k)
+               tmp = as(i,k)
+               tmp1 = cs(i,k)
+            IF(qs(i,k) .gt. qsmall .and. ns(i,k) .gt.qsmall)THEN
+               ans = as(i,k)/(ns(i,k)*nus)
+               cns = cs(i,k)/(ns(i,k)*nus)
+               as(i,k) = ans**2*cns*nus*ns(i,k)
+               cs(i,k) = cns**2*ans*nus*ns(i,k)
+            else
+                  as(i,k)=0.; cs(i,k)=0.; qs(i,k)=0.; ns(i,k)=0.
             END IF
-
+               if (.not.(as(i,k).lt.10.)) then
+                     print*, 'as.ge.10 resize',tmp,tmp1,as(i,k),cs(i,k)
+                     print*, 'resize', ans,cns,ns(i,k),qs(i,k)
+                     print*, 'ijkt resize', i,j,k,itimestep*dt
+                     as(i,k)=0.; cs(i,k)=0.; qs(i,k)=0.; ns(i,k)=0.
+               endif
+               if (.not.(cs(i,k).lt.10.)) then
+                     print*, 'cs.ge.10 resize',tmp,tmp1,as(i,k),cs(i,k)
+                     print*, 'resize', ans,cns,ns(i,k),qs(i,k)
+                     print*, 'ijkt resize', i,j,k,itimestep*dt
+                     as(i,k)=0.; cs(i,k)=0.; qs(i,k)=0.; ns(i,k)=0.
+               endif
          END DO !end k
 
          precprt(i) = 0.0
@@ -5260,7 +5280,7 @@ CONTAINS
 !            cs(i,k) = max(cs(i,k),0.0)
 !            qg(i,k) = max(qg(i,k),0.0)
 !            ng(i,k) = max(ng(i,k),0.0)
-            !if(as(i,k).gt.0.0)print*,'as4',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus(i,k)*ns(i,k)))**(1./3.)
+            !if(as(i,k).gt.0.0)print*,'as4',real(itimestep)*dt,i,k,as(i,k),cs(i,k),((cs(i,k)**2)/(as(i,k)*nus*ns(i,k)))**(1./3.)
 
             evs = min(FUDGE*p(i,k),polysvp1(t(i,k),0)) !Pa
             evi = min(FUDGE*p(i,k),polysvp1(t(i,k),1)) !pa
@@ -5754,40 +5774,44 @@ CONTAINS
     !CHECKS.
     !********************************************************
     SUBROUTINE ICE_CHECKS(flag,n,ni,qi,ani,cni,rni,deltastr,rhobar,iaspect,&
-         sphrflag,redden)
+         sphrflag,redden,i,j,k,itimestep,dt)
                  
       IMPLICIT NONE
       INTEGER iaspect, sphrflag, redden, flag
       REAL qi, ni, ani, cni, rni, deltastr, rhobar, n
+      integer, optional :: i,j,k,itimestep
+      real, optional :: dt
+
+      IF(flag.eq.2 .and. isnan(rhobar))print*,'BEFORE1', rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(flag.eq.2 .and. isnan(rni))print*,'BEFORE2', rni,'ijkt=',i,j,k,real(itimestep)*dt
       
-      IF(flag.eq.2 .and. isnan(rhobar))print*,'BEFORE1', rhobar
-      IF(flag.eq.2 .and. isnan(rni))print*,'BEFORE2', rni
+      CALL DSTR_CHECK(flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,i,j,k,itimestep,dt)
+      IF(flag.eq.2 .and. isnan(rni))print*,'AFTERDSTR', rni,'ijkt=',i,j,k,real(itimestep)*dt
+      CALL RHO_CHECK(flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,i,j,k,itimestep,dt)
+      IF(flag.eq.2 .and. isnan(rni))print*,'AFTERRHO1', rni,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(flag.eq.2 .and. isnan(rhobar))print*,'AFTERRHO2', rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      CALL R_CHECK(flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,i,j,k,itimestep,dt)
       
-      CALL DSTR_CHECK(flag,n,ni,ani,cni,deltastr,iaspect,sphrflag)
-      IF(flag.eq.2 .and. isnan(rni))print*,'AFTERDSTR', rni
-      CALL RHO_CHECK(flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar)
-      IF(flag.eq.2 .and. isnan(rni))print*,'AFTERRHO1', rni
-      IF(flag.eq.2 .and. isnan(rhobar))print*,'AFTERRHO2', rhobar
-      CALL R_CHECK(flag,n,qi,ni,cni,ani,rni,rhobar,deltastr)
-      
-      IF(flag.eq.2 .and. isnan(rhobar))print*,'AFTER1', rhobar
-      IF(flag.eq.2 .and. isnan(rni))print*,'AFTER2', rni
+      IF(flag.eq.2 .and. isnan(rhobar))print*,'AFTER1', rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(flag.eq.2 .and. isnan(rni))print*,'AFTER2', rni,'ijkt=',i,j,k,real(itimestep)*dt
                  
 
     END SUBROUTINE ICE_CHECKS
 
-    SUBROUTINE DSTR_CHECK(flag,n,ni,ani,cni,deltastr,iaspect,sphrflag)
+    SUBROUTINE DSTR_CHECK(flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,i,j,k,itimestep,dt)
       
       IMPLICIT NONE
       INTEGER :: iaspect,sphrflag,flag
       REAL ::  ani, cni, deltastr, voltmp, ai, ci, ni, gn, n
-      
+      integer i,j,k,itimestep
+      real dt
+
       IF(flag.eq.2)THEN
-      IF(isnan(n))print*,'n1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(deltastr))print*,'deltastr1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(ni))print*,'ni1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(ani))print*,'ani1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(cni))print*,'cni1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
+      IF(isnan(n))print*,'n1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(deltastr))print*,'deltastr1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ni))print*,'ni1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ani))print*,'ani1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(cni))print*,'cni1D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
       END IF
 
       !     get deltastr from cni and ani
@@ -5830,30 +5854,32 @@ CONTAINS
       endif
       
       IF(flag.eq.2)THEN
-      IF(isnan(n))print*,'n2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(deltastr))print*,'deltastr2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(ni))print*,'ni2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(ani))print*,'ani2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
-      IF(isnan(cni))print*,'cni2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag
+      IF(isnan(n))print*,'n2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(deltastr))print*,'deltastr2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ni))print*,'ni2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ani))print*,'ani2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(cni))print*,'cni2D',flag,n,ni,ani,cni,deltastr,iaspect,sphrflag,'ijkt=',i,j,k,real(itimestep)*dt
       END IF
       
     END SUBROUTINE DSTR_CHECK
 
-    SUBROUTINE RHO_CHECK(flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar)
+    SUBROUTINE RHO_CHECK(flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,i,j,k,itimestep,dt)
       IMPLICIT NONE
       INTEGER sphrflag, redden, flag
       REAL deltastr, qi, ni, ani, cni, n, gn
       REAL alphstr, alphv, betam
       REAL rhobar
-      
+      integer i,j,k,itimestep
+      real dt
+
       IF(flag.eq.2)THEN
-      IF(isnan(n))print*,'n1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(deltastr))print*,'deltastr1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(qi))print*,'qi1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(ni))print*,'ni1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(ani))print*,'ani1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(cni))print*,'cni1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(rhobar))print*,'rhobar1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
+      IF(isnan(n))print*,'n1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(deltastr))print*,'deltastr1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(qi))print*,'qi1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ni))print*,'ni1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ani))print*,'ani1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(cni))print*,'cni1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(rhobar))print*,'rhobar1RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
       END IF
 
       gn = exp(gammln(n))
@@ -5887,35 +5913,40 @@ CONTAINS
       END IF
       
       IF(flag.eq.2)THEN
-      IF(isnan(n))print*,'n2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(deltastr))print*,'deltastr2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(qi))print*,'qi2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(ni))print*,'ni2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(ani))print*,'ani2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(cni))print*,'cni2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
-      IF(isnan(rhobar))print*,'rhobar2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar
+      IF(isnan(n))print*,'n2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(deltastr))print*,'deltastr2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(qi))print*,'qi2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ni))print*,'ni2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ani))print*,'ani2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(cni))print*,'cni2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(rhobar))print*,'rhobar2RHO',flag,n,deltastr,qi,ni,ani,cni,sphrflag,redden,rhobar,'ijkt=',i,j,k,real(itimestep)*dt
       END IF
 
       
     END SUBROUTINE RHO_CHECK
 
     !     get rni (characteristic equivalent volume ice radius)
-    SUBROUTINE R_CHECK(flag,n,qi,ni,cni,ani,rni,rhobar,deltastr)
+
+    !!!MIGHT WANT TO EDIT THIS SO THAT A & C DO NOT GET TOO LARGE AS
+    !!WELL FOR EXTREME ASPECT RATIOS
+    SUBROUTINE R_CHECK(flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,i,j,k,itimestep,dt)
       IMPLICIT NONE
       INTEGER flag
       REAL qi, ni, cni, ani, rhobar, deltastr, n, gn
       REAL rni
       REAL alphstr, alphv, betam
-      
+      integer i,j,k,itimestep
+      real dt
+
       IF(flag.eq.2)THEN
-      IF(isnan(n))print*,'n1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(deltastr))print*,'deltastr1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(qi))print*,'qi1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(ni))print*,'ni1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(ani))print*,'ani1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(cni))print*,'cni1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(rni))print*,'rni1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(rhobar))print*,'rhobar1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
+      IF(isnan(n))print*,'n1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(deltastr))print*,'deltastr1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(qi))print*,'qi1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ni))print*,'ni1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ani))print*,'ani1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(cni))print*,'cni1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(rni))print*,'rni1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(rhobar))print*,'rhobar1R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
       END IF
 
       gn = exp(gammln(n))
@@ -5952,15 +5983,15 @@ CONTAINS
       END IF
       
      IF(flag.eq.2)THEN
-      IF(isnan(n))print*,'n2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(deltastr))print*,'deltastr2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(qi))print*,'qi2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(ni))print*,'ni2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(ani))print*,'ani2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
-      IF(isnan(cni))print*,'cni2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
+      IF(isnan(n))print*,'n2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(deltastr))print*,'deltastr2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(qi))print*,'qi2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ni))print*,'ni2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(ani))print*,'ani2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(cni))print*,'cni2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
       IF(isnan(rni))print*,'rni2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,gn, &
-      (exp(gammln(n+deltastr+2.))/gn)
-      IF(isnan(rhobar))print*,'rhobar2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr
+      (exp(gammln(n+deltastr+2.))/gn), gammln(n),'ijkt=',i,j,k,real(itimestep)*dt
+      IF(isnan(rhobar))print*,'rhobar2R',flag,n,qi,ni,cni,ani,rni,rhobar,deltastr,'ijkt=',i,j,k,real(itimestep)*dt
       END IF
 
     END SUBROUTINE R_CHECK
@@ -6048,9 +6079,6 @@ CONTAINS
     
     
     END SUBROUTINE COLL_COMPUTE
-
-
-
 
 
     SUBROUTINE COLL_LOOKUP(ni,an,cn,rho,agg,nagg,aagg,anagg,cnagg,ddagg)
