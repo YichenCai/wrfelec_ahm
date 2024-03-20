@@ -41,7 +41,7 @@ SUBROUTINE microphysics_driver(                                          &
                       ,praiout, cfrzr &
 
                       !Variables for AHM (sh with IPAS agg)
-                      ,qagg,qnagg,phis,rhos,cplx,cplxs &
+                      ,qagg,qnagg,qagg_ss,qnagg_ss,qagg_si,qnagg_si,phis,rhos,cplx,cplxs &
 !====================================================
                       !Variables required for CAMMGMP Scheme
                       ,dlf,dlf2,t_phy,p_hyd,p8w_hyd,tke_pbl,z_at_w,qfx   &
@@ -648,7 +648,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                                   ,evpmgout,pgmltout,qmultgout,qmultrgout,immersion  &
                                   ,praiout, cfrzr&
                  !AHM (sh with ipas agg)
-                                  ,asnow_curr,csnow_curr,qagg,qnagg,phis,rhos,cplx,cplxs &
+                                  ,asnow_curr,csnow_curr,qagg,qnagg,qagg_ss,qnagg_ss,qagg_si,qnagg_si,phis,rhos,cplx,cplxs &
                                                    ,csaci03d,chaci03d,chacs03d, csaci03d_morr       & ! yc added 9/23/2020 for i-g and s-g collision rates
                                                    ,umc,umr,umi,ums,umg,umh                         & ! yc added 9/08/2021 fall speed
                                                    ,rhog,rhoh                                  & ! yc added 9/08/2021 hydrometeor density from nssl2m
@@ -1678,6 +1678,10 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
              FRZNACCT = frznacct,                &
              QAGG = qagg,                        &
              QNAGG = qnagg,                      &
+             QAGG_SS = qagg_ss,                        &
+             QNAGG_SS = qnagg_ss,                      &
+             QAGG_SI = qagg_si,                        &
+             QNAGG_SI = qnagg_si,                      &
              CPLX = cplx,                        &
              PHIS = phis,                        &
              RHOS = rhos,                        &
@@ -1774,6 +1778,10 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      FRZNACCT = frznacct,                &
                      QAGG = qagg,                        &
                      QNAGG = qnagg,                      &
+                     QAGG_SS = qagg_ss,                        &
+                     QNAGG_SS = qnagg_ss,                      &
+                     QAGG_SI = qagg_si,                        &
+                     QNAGG_SI = qnagg_si,                      &
                      CPLX = cplx,                        &
                      PHIS = phis,                        &
                      RHOS = rhos,                        &

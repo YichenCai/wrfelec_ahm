@@ -3828,7 +3828,10 @@ BENCH_START(micro_driver_tim)
       &        ,RHOIPLA=grid%rhoipla,PHIPLA=grid%phipla                   &
       &        ,RHOICOL=grid%rhoicol,PHICOL=grid%phicol                   &
 !AHM (sh with ipas agg)
-      &        ,QAGG=grid%qagg,QNAGG=grid%qnagg,CPLX=grid%cplx           &
+      &        ,QAGG=grid%qagg,QNAGG=grid%qnagg                          &
+      &        ,QAGG_SS=grid%qagg_ss,QNAGG_SS=grid%qnagg_ss              &
+      &        ,QAGG_SI=grid%qagg_si,QNAGG_SI=grid%qnagg_si              &
+      &        ,CPLX=grid%cplx           &
       &        ,PHIS=grid%phis,RHOS=grid%rhos,CPLXS=grid%cplxs           &
 
 #if (WRF_CHEM == 1)
