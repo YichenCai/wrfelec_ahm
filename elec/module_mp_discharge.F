@@ -18,14 +18,17 @@
      &  ,qnc,qns,qni,qnr,qng,qnh &
      &  ,elec,scion,sciona        &
      &  ,nbw,nbe,nbs,nbn   &
-     &  ,iunit, db,light,lightdens,etot,lightdis)
+     &  ,iunit, db,light,lightdens,etot,lightdis &
+     &  ,csaci03d_morr, induc)
      
       implicit none
 
 #ifdef DM_PARALLEL
       INCLUDE 'mpif.h'
 #endif
-      
+
+      integer itimestep, history_interval
+      real dt, curr_secs
       integer iunit,tag2,iter,loccur
       real elec(0:nx+1,nz,0:ny+1) 
       real scion(0:nx+1,nz,0:ny+1,2)  ! 2=+, 1=- 
@@ -89,6 +92,9 @@
       real qnc(-nbw:nx+1+nbe,nz,-nbs:ny+1+nbn)
       real qni(-nbw:nx+1+nbe,nz,-nbs:ny+1+nbn)
       real qns(-nbw:nx+1+nbe,nz,-nbs:ny+1+nbn)
+
+      real csaci03d_morr(-nbw:nx+1+nbe,nz,-nbs:ny+1+nbn)
+      real induc(-nbw:nx+1+nbe,nz,-nbs:ny+1+nbn)
 
       real frachl
       real frach
@@ -298,7 +304,7 @@
 !
        END IF 
 
-       
+
       pi = 4.*atan(1.)
 !
 !  This scheme is the simplist of all.  If |E| => elgtt1 
@@ -350,6 +356,9 @@
       if ( elec(ix,kz,jy) .gt. ebrkd(ix,jy,kz) ) then
         xy_init(ix,jy) = 1.0
         ninit = ninit + 1
+        ! yc added 10/16/2024 to get breakdown altitude
+        csaci03d_morr(ix,kz,jy) = csaci03d_morr(ix,kz,jy) + 1 ! total number of breakdown
+        induc(ix,kz,jy) = induc(ix,kz,jy) + (elec(ix,kz,jy) - ebrkd(ix,jy,kz)) ! total exceeding efield-mag
       ENDIF
    
 !        light(ix,jy) = light(ix,jy) + xy_init(ix,jy) ! set to zero ar every iterations..added up outaide in driver
@@ -491,7 +500,7 @@
        end do
       
       ENDIF ! chgmax
-      ENDIF ! } ( ij_reduce(ix,jy) > 0 ) 
+      ENDIF ! } ( ij_reduce(ix,jy) > 0 )
       
       ENDDO
       ENDDO
@@ -504,6 +513,15 @@
 
 !      light(ix,jy)=FLOAT(ij_reduce(ix,jy)) / ( pi*(lightrad*1.e-03)**2 )
        lightdens(ix,jy)=lightdens(ix,jy)+FLOAT(ij_reduce(ix,jy))
+!      if (xy_init(ix,jy).ne.0.0 .and. xy_init(ix,jy).ne.1.0) then
+!          write(0,*) 'xy_init greater than zero: ', xy_init(ix,jy)
+!      endif
+!      if (light(ix,jy).gt.70) then
+!          write(0,*) 'light exceeding 70'
+!          write(0,*) 'light= ',light(ix,jy),'  xy_init= ', xy_init(ix,jy)
+!          write(0,*) 'ix,jy ',ix,jy
+!          write(0,*) 'itimestep, dt, curr_secs, history_interval', itimestep, dt, curr_secs, history_interval
+!      endif
        light(ix,jy)=light(ix,jy)+xy_init(ix,jy)
 
       ENDDO

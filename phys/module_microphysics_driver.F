@@ -2,6 +2,8 @@
 ! *** add new modules of schemes here
 !
 MODULE module_microphysics_driver
+    use ieee_arithmetic
+    IMPLICIT NONE
 CONTAINS
 
 SUBROUTINE microphysics_driver(                                          &
@@ -1593,7 +1595,6 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
 !         end do
 !         end do
 !         end do
-
 
          IF ( elec_physics == 0 ) THEN
              CALL mp_ahm(                       &

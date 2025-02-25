@@ -5890,11 +5890,21 @@ END SUBROUTINE nssl_2mom_driver
          bbx = bxh(mgs)
          
        ENDIF
-       
+
+!       write(0,*) 'before the vtxbar loop'
       IF ( alpha(mgs,lh) .eq. 0.0 .and. icdx > 0 .and. icdx /= 6 ) THEN
+
       vtxbar(mgs,lh,1) = (gf4p5/6.0)*  &
      &  Sqrt( (xdn(mgs,lh)*xdia(mgs,lh,1)*4.0*gr) /  &
      &    (3.0*cd*rho0(mgs)) )
+!      write(0,*) 'entering the vtxbar loop'
+!      if (vtxbar(mgs,lh,1).ge.10) then
+!        write(0,*) '-----------'
+!        write(0,*) 'xdn,xdia,gr', xdn(mgs,lh), xdia(mgs,lh,1), gr
+!        write(0,*) 'cd, rho0', cd, rho0(mgs)
+!        write(0,*) 'ug = ', vtxbar(mgs,lh,1)
+!        write(0,*) '-----------'
+!      end if
       ELSE
         IF ( icdx /= 6 ) bbx = bx(lh)
         tmp = 4. + alpha(mgs,lh) + bbx
@@ -17508,28 +17518,7 @@ END SUBROUTINE nssl_2mom_driver
       scxacy(mgs,il,ic) = qconkq*(xdia(mgs,ic,1)**qconm)   &
      &  *((abs(vtxbar(mgs,il,1)-vtxbar(mgs,ic,1)))**qconn)   &
      &  *ftelwc*cfce15
-!      if(abs(scxacy(mgs,il,ic)).gt.0.0) then
-!        write(0,*) 'individual scxacy(mgs,il,ic)=', scxacy(mgs,il,ic)
-!        write(0,*) 'mgs,i,j,k,t=', mgs,igs(mgs),jyslab,kgs(mgs),itimestep
-!        write(0,*) 'il,ic=', il,ic
-!        write(0,*) 'qconkq,qconm,qconn,ftelwc=',qconkq,qconm,qconn,ftelwc
-!
-!        if (il==lh) then
-!          write(0,*) 'vtxbar il=lh', vtxbar(mgs,il,1)
-!        elseif (il==ls) then
-!          write(0,*) 'vtxbar il=ls', vtxbar(mgs,il,1)
-!        elseif (il==lhl) then
-!          write(0,*) 'vtxbar il=lhl', vtxbar(mgs,il,1)
-!        end if
-!
-!        if (ic==li) then
-!          write(0,*) 'vtxbar ic=li', vtxbar(mgs,ic,1)
-!        elseif (ic==ls) then
-!          write(0,*) 'vtxbar ic==ls', vtxbar(mgs,ic,1)
-!        end if
-!        write(0,*) 'xdia(mgs,ic,1)', xdia(mgs,ic,1)
-!        write(0,*) 'temcg(mgs),qcwtmp(mgs),exy(mgs,il,lc)', temcg(mgs),qcwtmp(mgs),exy(mgs,il,lc)
-!      end if
+
       if ( scxacy(mgs,il,ic) .gt. 0.0 ) then ! {
       scxacy(mgs,il,ic) = min(delqxxa(ic),scxacy(mgs,il,ic))
       end if

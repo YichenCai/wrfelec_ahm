@@ -18,6 +18,8 @@
       light(:,:)=0.
       lightdis(:,:)=0.
       lightdens(:,:)=0.
+      csaci03d_morr(:,:,:) =0.
+      induc(:,:,:)=0.
      endif
 
        IF ( num_tiles > 1 ) THEN
@@ -223,7 +225,9 @@
      
        endif
 
-       elecmag(:,:,:)=elec(:,:,:,4)
+       if (iter.eq.1) then
+           elecmag(:,:,:)=elec(:,:,:,4)
+       end if
        loccur = 0
        lgtstp = 0
        
@@ -253,7 +257,8 @@
       &  ,sciona(its-1:ite+1,kts:kte,jts-1:jte+1) &
       &  ,nbw,nbe,nbs,nbn                                                                                                 &
       &  ,iunit, rho(its-1:ite+1,kts:kte,jts-1:jte+1)                           &
-      &  ,light(its-1:ite+1,jts-1:jte+1),lightdens(its-1:ite+1,jts-1:jte+1),etot,lightdis(its-1:ite+1,jts-1:jte+1))
+      &  ,light(its-1:ite+1,jts-1:jte+1),lightdens(its-1:ite+1,jts-1:jte+1),etot,lightdis(its-1:ite+1,jts-1:jte+1) &
+      &  ,csaci03d_morr(its-1:ite+1,kts:kte,jts-1:jte+1),induc(its-1:ite+1,kts:kte,jts-1:jte+1))
 
        ELSEIF (idischarge .eq. 2) THEN
         
@@ -270,6 +275,7 @@
     
        if (iter.ge.maxiter) then
 
+           write(0,*) 'reducing charge manually, itime=', itimestep, iter
        do k=kts,kte
        do i=its-1,ite+1
        do j=jts-1,jte+1
@@ -343,6 +349,8 @@
      lightdens(:,:)=0.
      lightdis(:,:)=0.
      elecmag(:,:,:)=0.
+     csaci03d_morr(:,:,:) =0.
+     induc(:,:,:)=0.
 
       ENDIF  !  ipelectmp.gt.1
 

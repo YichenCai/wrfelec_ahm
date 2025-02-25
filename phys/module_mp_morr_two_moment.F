@@ -90,6 +90,8 @@ MODULE MODULE_MP_MORR_TWO_MOMENT
 
     ! USE WRF PHYSICS CONSTANTS
     use module_model_constants, ONLY: CP, G, R => r_d, RV => r_v, EP_2
+    USE ieee_arithmetic
+
 
     !  USE module_state_description
 
@@ -1141,7 +1143,7 @@ CONTAINS
 
         integer :: lnb, il
         integer :: nx,ny,nz
-        integer :: nstep, ltrue
+        integer :: nstep, ltrue, testflag
         integer, dimension(its:ite, jts:jte) :: nstep2d, ltrue2d
         integer, parameter :: nor = 0
         real :: tmp, dv
@@ -1157,7 +1159,12 @@ CONTAINS
 #endif
         !-----------------------------------------------------------------------
         !End Explicit lightning ------------------------------------------------
-
+        if (any(isnan(QI)) .or. any(.not.ieee_is_finite(QI))) then
+            testflag=1
+            write(0,*) 'qi nan passing in'
+            write(0,*) 'stopping due to nan'
+            stop
+        end if
 
         ! below for wrf-chem
         flag_qndrop = .false.
@@ -1471,7 +1478,7 @@ CONTAINS
                 QG_TEND1D,NG_TEND1D,QG1D,NG1D,EFFG1D, &
                 qrcu1d, qscu1d, qicu1d, &
                 ! ADD SEDIMENTATION TENDENCIES
-                QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
+                QGSTEN,QISTEN,QNISTEN,QCSTEN, &
                 nc1d, nc_tend1d, iinum, C2PREC,CSED,ISED,SSED,GSED,RSED & !wrf-chem
                 !-----------------------------------------------------------------------
                 !Explicit lightning ----------------------------------------------------
@@ -1485,7 +1492,6 @@ CONTAINS
                 , an1d, elec1d &
                 , t2_1d,t3_1d,t5_1d,t6_1d,t8_1d &
                 ,PRD &
-                ,PRE &
                 ,PRDS &
                 ,MNUCCC &
                 ,PRA &
@@ -1497,10 +1503,7 @@ CONTAINS
                 ,PRCI &
                 ,PSACWS &
                 ,PSACWI &
-                ,QMULTS &
-                ,QMULTR &
                 ,PRACS &
-                ,PCCN &
                 ,PSMLT &
                 ,EVPMS &
                 ,PIACR &
@@ -1519,7 +1522,7 @@ CONTAINS
                 ,PGMLT &
                 ,PSACR &
                 ,QMULTG &
-                ,QMULTRG &
+                , PCCN, PRE, QMULTRG, QMULTR, QMULTS, QRSTEN &
                 !-----------------------------------------------------------------------
                 !End Explicit lightning ------------------------------------------------
 #if (WRF_CHEM == 1)
@@ -1540,11 +1543,11 @@ CONTAINS
                     ums(i,kts:kte,j) = ums1d(kts:kte)
                     umg(i,kts:kte,j) = umg1d(kts:kte)
 
-                    csaci03d(i,kts:kte,j) = csaci0(kts:kte)/rho_igl(i,kts:kte,j)
+                    csaci03d(i,kts:kte,j) = csaci0_morr(kts:kte)/rho_igl(i,kts:kte,j)
                     !                    csaci03d(i,kts:kte,j) = csaci0(kts:kte)
                     chaci03d(i,kts:kte,j) = chaci0(kts:kte)/rho_igl(i,kts:kte,j)
                     chacs03d(i,kts:kte,j) = chacs0(kts:kte)/rho_igl(i,kts:kte,j)
-                    csaci03d_morr(i,kts:kte,j) = csaci0_morr(kts:kte)
+!                    csaci03d_morr(i,kts:kte,j) = csaci0_morr(kts:kte)
 
                     schaci3d(i,kts:kte,j) = schaci(kts:kte)
                     schacs3d(i,kts:kte,j) = schacs(kts:kte)
@@ -1796,7 +1799,7 @@ CONTAINS
                             sctot(i,kts:kte,j) = 0.
                             chaci03d(i,kts:kte,j) = 0.
                             chacs03d(i,kts:kte,j) = 0.
-                            csaci03d_morr(i,kts:kte,j) = 0.
+!                            csaci03d_morr(i,kts:kte,j) = 0.
                             schaci3d(i,kts:kte,j) = 0.
                             schacs3d(i,kts:kte,j) = 0.
                             scsaci3d(i,kts:kte,j) = 0.
@@ -1986,6 +1989,55 @@ CONTAINS
 
     !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
     !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+!    SUBROUTINE MORR_TWO_MOMENT_MICRO(QC3DTEN,QI3DTEN,QNI3DTEN,QR3DTEN,         &
+!            NI3DTEN,NS3DTEN,NR3DTEN,QC3D,QI3D,QNI3D,QR3D,NI3D,NS3D,NR3D,              &
+!            T3DTEN,QV3DTEN,T3D,QV3D,PRES,DZQ,W3D,WVAR,PRECRT,SNOWRT,            &
+!            SNOWPRT,GRPLPRT,                & ! hm added 7/13/13
+!            EFFC,EFFI,EFFS,EFFR,DT,                                                   &
+!            IMS,IME, JMS,JME, KMS,KME,           &
+!            ITS,ITE, JTS,JTE, KTS,KTE,           & ! ADD GRAUPEL
+!            QG3DTEN,NG3DTEN,QG3D,NG3D,EFFG,qrcu1d,qscu1d, qicu1d,    &
+!            QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
+!            nc3d,nc3dten,iinum, & ! wrf-chem
+!            c2prec,CSED,ISED,SSED,GSED,RSED  &  ! hm added, wrf-chem
+!            !            , fr, fnr, fi, fni, fs, fns, fc, fnc, fg, fng  & ! terminal fall velocity
+!            , umc1d, umr1d, umi1d, ums1d, umg1d & ! fall speed
+!            , nstep, ipelec, ltrue &
+!            , I, J, ITIMESTEP &
+!            , IDS,IDE, JDS,JDE, KDS,KDE & ! domain dims
+!            , CSACI0, CHACI0, CHACS0, csaci0_morr &
+!            ,schaci,schacs,scsaci &
+!            , an1d, elec1d &
+!            , t2,t3,t5,t6,t8 &
+!            ,PRD &
+!            ,PRE &
+!            ,PRDS &
+!            ,MNUCCC &
+!            ,PRA &
+!            ,PRC &
+!            ,PCC &
+!            ,MNUCCD &
+!            ,MNUCCR &
+!            ,PRAI &
+!            ,PRCI &
+!            ,PSACWS &
+!            ,PSACWI &
+!            ,QMULTS &
+!            ,QMULTR &
+!            ,PRACS &
+!            ,PCCN &
+!            ,PSMLT &
+!            ,EVPMS &
+!            ,PIACR &
+!            ,PRACI ,PIACRS ,PRACIS ,EPRD &
+!            ,EPRDS ,PRACG  ,PSACWG, PGSACW &
+!            ,PGRACS ,PRDG ,EPRDG ,EVPMG &
+!            ,PGMLT ,PSACR ,QMULTG ,QMULTRG &
+!#if (WRF_CHEM == 1)
+!            ,rainprod, evapprod &
+!#endif
+!            )
+
     SUBROUTINE MORR_TWO_MOMENT_MICRO(QC3DTEN,QI3DTEN,QNI3DTEN,QR3DTEN,         &
             NI3DTEN,NS3DTEN,NR3DTEN,QC3D,QI3D,QNI3D,QR3D,NI3D,NS3D,NR3D,              &
             T3DTEN,QV3DTEN,T3D,QV3D,PRES,DZQ,W3D,WVAR,PRECRT,SNOWRT,            &
@@ -1994,7 +2046,7 @@ CONTAINS
             IMS,IME, JMS,JME, KMS,KME,           &
             ITS,ITE, JTS,JTE, KTS,KTE,           & ! ADD GRAUPEL
             QG3DTEN,NG3DTEN,QG3D,NG3D,EFFG,qrcu1d,qscu1d, qicu1d,    &
-            QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
+            QGSTEN,QISTEN,QNISTEN,QCSTEN, &
             nc3d,nc3dten,iinum, & ! wrf-chem
             c2prec,CSED,ISED,SSED,GSED,RSED  &  ! hm added, wrf-chem
             !            , fr, fnr, fi, fni, fs, fns, fc, fnc, fg, fng  & ! terminal fall velocity
@@ -2007,7 +2059,6 @@ CONTAINS
             , an1d, elec1d &
             , t2,t3,t5,t6,t8 &
             ,PRD &
-            ,PRE &
             ,PRDS &
             ,MNUCCC &
             ,PRA &
@@ -2019,29 +2070,17 @@ CONTAINS
             ,PRCI &
             ,PSACWS &
             ,PSACWI &
-            ,QMULTS &
-            ,QMULTR &
             ,PRACS &
-            ,PCCN &
             ,PSMLT &
             ,EVPMS &
             ,PIACR &
-            ,PRACI &
-            ,PIACRS &
-            ,PRACIS &
-            ,EPRD &
-            ,EPRDS &
-            ,PRACG &
-            ,PSACWG &
-            ,PGSACW &
-            ,PGRACS &
-            ,PRDG &
-            ,EPRDG &
-            ,EVPMG &
-            ,PGMLT &
-            ,PSACR &
-            ,QMULTG &
-            ,QMULTRG &
+            ,PRACI ,PIACRS ,PRACIS ,EPRD &
+            ,EPRDS ,PRACG  ,PSACWG, PGSACW &
+            ,PGRACS ,PRDG ,EPRDG ,EVPMG &
+            ,PGMLT ,PSACR ,QMULTG &
+            !            , PCCN, PRE, QMULTRG, QMULTR, QMULTS, QRSTEN
+            ,ftelwchi, ftelwchs, ftelwcsi &
+            ,xdiai, xdias, xdiag &
 #if (WRF_CHEM == 1)
             ,rainprod, evapprod &
 #endif
@@ -2495,6 +2534,11 @@ CONTAINS
     real, dimension(kts:kte) :: faloutscc,faloutscr,faloutsci,faloutscs,faloutscg
     real :: faltndscc,faltndscr,faltndsci,faltndscs,faltndscg
 
+    REAL, DIMENSION(kts:kte) :: qconkqhi, qconmhi, qconnhi, ftelwchi
+    REAL, DIMENSION(kts:kte) :: qconkqhs, qconmhs, qconnhs, ftelwchs
+    REAL, DIMENSION(kts:kte) :: qconkqsi, qconmsi, qconnsi, ftelwcsi
+    REAL, DIMENSION(kts:kte) :: xdiac, xdiai, xdias, xdiag
+
     !-----------------------------------------------------------------------
     ! end lightning
 
@@ -2691,6 +2735,10 @@ CONTAINS
 
         DUMSC(:,:) = 0.0
 
+        qconkqhi = 0.0; qconmhi = 0.0; qconnhi = 0.0; ftelwchi = 0.0
+        qconkqhs = 0.0; qconmhs = 0.0; qconnhs = 0.0; ftelwchs = 0.0
+        qconkqsi = 0.0; qconmsi = 0.0; qconnsi = 0.0; ftelwcsi = 0.0
+        xdiac = 0.0; xdiai = 0.0; xdias = 0.0; xdiag = 0.0
     END IF !(IPELEC>0)
 
     ! ATMOSPHERIC PARAMETERS THAT VARY IN TIME AND HEIGHT
@@ -5529,6 +5577,25 @@ CONTAINS
                                                         &   rho(k),qsign,ftelwc,qconkq,qconm,qconn,idelq)
                                             ENDIF
 
+                                            if (il==lh .and. ic==li) then
+                                                qconkqhi(k) = qconkq
+                                                qconmhi(k) = qconm
+                                                qconnhi(k) = qconn
+                                                ftelwchi(k) = ftelwc
+                                            end if
+                                            if (il==lh .and. ic==ls) then
+                                                qconkqhs(k) = qconkq
+                                                qconmhs(k) = qconm
+                                                qconnhs(k) = qconn
+                                                ftelwchs(k) = ftelwc
+                                            end if
+                                            if (il==ls .and. ic==li) then
+                                                qconkqsi(k) = qconkq
+                                                qconmsi(k) = qconm
+                                                qconnsi(k) = qconn
+                                                ftelwcsi(k) = ftelwc
+                                            end if
+
                                             cfce15 = 1.0e-15
                                             scxacy(k,il,ic) = qconkq*(xdia(k,ic)**qconm)   &
                                                     &  *((abs(umx(k,il)-umx(k,ic)))**qconn)   &
@@ -6776,11 +6843,16 @@ CONTAINS
         an1d(kts:kte,lnh) = ng3d(kts:kte)*RHO(kts:kte)
 
         ! test printout
-        QRSTEN(kts:kte) = xdia(kts:kte,lr)
-        QISTEN(kts:kte) = xdia(kts:kte,li)
-        QNISTEN(kts:kte) = xdia(kts:kte,ls)
-        QCSTEN(kts:kte) = xdia(kts:kte,lc)
-        QGSTEN(kts:kte) = xdia(kts:kte,lh)
+!        QRSTEN(kts:kte) = xdia(kts:kte,lr)
+!        QISTEN(kts:kte) = xdia(kts:kte,li)
+!        QNISTEN(kts:kte) = xdia(kts:kte,ls)
+!        QCSTEN(kts:kte) = xdia(kts:kte,lc)
+!        QGSTEN(kts:kte) = xdia(kts:kte,lh)
+
+        xdiac(kts:kte) = xdia(kts:kte,lc)
+        xdiai(kts:kte) = xdia(kts:kte,li)
+        xdias(kts:kte) = xdia(kts:kte,ls)
+        xdiag(kts:kte) = xdia(kts:kte,lg)
     END IF
     ! ALL DONE !!!!!!!!!!!
     RETURN
